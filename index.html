@@ -433,18 +433,11 @@ textarea{resize:vertical;min-height:70px}
     <div class="section" id="sec-avance">
       <div class="sh"><h2>Avance de obra</h2><span class="wpill" id="av-sem-lbl"></span></div>
 
-      <div id="av-upload-zone">
+      <div id="av-upload-zone" class="hidden">
         <div class="card" style="border:1.5px solid var(--b100)">
           <div class="ctitle">Añadir foto de avance</div>
-          <div class="r2"><div><label>Fecha</label><input type="date" id="av-fecha"></div><div><label>Etiqueta</label>
-            <select id="av-tag">
-              <option value="estructura">Estructura</option><option value="fundacion">Fundación</option>
-              <option value="mamposteria">Mampostería</option><option value="instalaciones">Instalaciones</option>
-              <option value="acabados">Acabados</option><option value="movimiento-tierra">Mov. tierra</option>
-              <option value="general">General</option><option value="incidencia">Incidencia</option>
-            </select>
-          </div></div>
-          <label>Descripción</label><input type="text" id="av-desc" placeholder="Ej: Colado losa nivel 2...">
+          <div class="r2"><div><label>Fecha</label><input type="date" id="av-fecha"></div><div><label>Semana</label><input type="number" id="av-semana" min="1" placeholder="1" style="background:#fff"></div></div>
+          <label>Descripción</label><input type="text" id="av-desc" placeholder="Ej: Colado losa nivel 2, Armado columnas eje B...">
           <div class="pupload mt8" onclick="document.getElementById('av-file').click()">
             <input type="file" id="av-file" accept="image/*" onchange="handleAvanceFoto(event)">
             <div style="font-size:24px;margin-bottom:6px">📷</div>
@@ -456,16 +449,6 @@ textarea{resize:vertical;min-height:70px}
         </div>
       </div>
 
-      <div class="card">
-        <div class="ctitle">Filtrar</div>
-        <div class="tg" id="tg-avance">
-          <span class="to sel" data-val="todos">Todos</span>
-          <span class="to" data-val="estructura">Estructura</span><span class="to" data-val="fundacion">Fundación</span>
-          <span class="to" data-val="mamposteria">Mampostería</span><span class="to" data-val="instalaciones">Instalaciones</span>
-          <span class="to" data-val="movimiento-tierra">Mov. tierra</span><span class="to" data-val="acabados">Acabados</span>
-          <span class="to" data-val="incidencia">Incidencia</span>
-        </div>
-      </div>
       <div id="av-grid"><div class="empty"><div class="eicon">🏗️</div>Sin fotos de avance aún</div></div>
     </div>
 
@@ -652,17 +635,15 @@ function initForms(){
   document.getElementById('ff').value=t;document.getElementById('g-f').value=t;
   document.getElementById('av-fecha').value=t;
   document.getElementById('av-sem-lbl').textContent='Semana '+getProyWeek();
+  if(document.getElementById('av-semana'))document.getElementById('av-semana').value=getProyWeek();
   document.getElementById('proy-nov-fecha').value=t;
-  // propietario solo ve, no carga
-  if(CU.rol==='propietario'){
-    const uz=document.getElementById('av-upload-zone');
-    if(uz)uz.classList.add('hidden');
-  }
-  // admin puede publicar novedades del proyecto
+  // avance: solo admin sube fotos
   if(CU.rol==='admin'){
+    document.getElementById('av-upload-zone').classList.remove('hidden');
     const ap=document.getElementById('proy-admin-panel');
     if(ap)ap.classList.remove('hidden');
   }
+  // propietario: solo vista, sin upload ni edición (ya oculto por defecto)
   initToggles();
 }
 function initToggles(){
@@ -914,7 +895,21 @@ async function loadFotos(filtro){
   if(filtro&&filtro!=='todos')q=q.eq('tag',filtro);
   const {data}=await q;const el=document.getElementById('fgrid');
   if(!data||!data.length){el.innerHTML='<div class="empty"><div class="eicon">🖼️</div>Sin fotos</div>';return}
-  el.innerHTML='<div class="pgrid">'+data.map(f=>`<div class="pthumb"><img src="${f.img_base64||f.img_url||''}" alt="${f.descripcion||''}" loading="lazy" onerror="this.style.background='#eee'"><div class="pthumb-lbl"><div>${f.descripcion||f.tag}</div><div style="opacity:0.7;font-size:9px">${fmtD(f.fecha)}</div></div></div>`).join('')+'</div>';
+  const isAdmin=CU&&CU.rol==='admin';
+  el.innerHTML='<div class="pgrid">'+data.map(f=>`
+    <div class="pthumb" style="position:relative">
+      <img src="${f.img_base64||f.img_url||''}" alt="${f.descripcion||''}" loading="lazy" onerror="this.style.background='#eee'">
+      <div class="pthumb-lbl">
+        <div>${f.descripcion||f.tag}</div>
+        <div style="opacity:0.7;font-size:9px">${fmtD(f.fecha)}</div>
+      </div>
+      ${isAdmin?`<button onclick="delFoto('${f.id}')" style="position:absolute;top:6px;right:6px;background:rgba(163,45,45,0.85);color:white;border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">✕</button>`:''}
+    </div>`).join('')+'</div>';
+}
+async function delFoto(id){
+  if(!confirm('¿Eliminar esta foto?'))return;
+  await sb.from('fotos').delete().eq('id',id);
+  loadFotos(gtog('tg-foto')||'todos');
 }
 
 // ─── AVANCE ───────────────────────────────────────
@@ -942,25 +937,37 @@ function handleAvanceFoto(e){
 }
 async function saveAvanceFoto(){
   if(!avanceB64){alert('Selecciona una foto primero.');return}
-  const semana=getProyWeek();
   await sb.from('avance_fotos').insert({
     fecha:document.getElementById('av-fecha').value,
     descripcion:document.getElementById('av-desc').value,
-    tag:document.getElementById('av-tag').value,
+    tag:'semana-'+(document.getElementById('av-semana').value||getProyWeek()),
     img_url:avanceB64,
   });
   avanceB64=null;
   document.getElementById('av-prev').classList.add('hidden');
   document.getElementById('av-desc').value='';
   document.getElementById('av-file').value='';
-  loadAvance(gtog('tg-avance')||'todos');
+  loadAvance('todos');
 }
 async function loadAvance(filtro){
-  let q=sb.from('avance_fotos').select('*').order('fecha',{ascending:false}).order('created_at',{ascending:false});
-  if(filtro&&filtro!=='todos')q=q.eq('tag',filtro);
-  const {data}=await q;const el=document.getElementById('av-grid');
+  const {data}=await sb.from('avance_fotos').select('*').order('fecha',{ascending:false}).order('created_at',{ascending:false});
+  const el=document.getElementById('av-grid');
   if(!data||!data.length){el.innerHTML='<div class="empty"><div class="eicon">🏗️</div>Sin fotos de avance aún</div>';return}
-  el.innerHTML='<div class="pgrid">'+data.map(f=>`<div class="pthumb"><img src="${f.img_url||''}" alt="${f.descripcion||''}" loading="lazy" onerror="this.style.background='#eee'"><div class="pthumb-lbl"><div>${f.descripcion||f.tag}</div><div style="opacity:0.7;font-size:9px">${fmtD(f.fecha)}</div></div></div>`).join('')+'</div>';
+  const isAdmin=CU&&CU.rol==='admin';
+  el.innerHTML='<div class="pgrid">'+data.map(f=>`
+    <div class="pthumb" style="position:relative">
+      <img src="${f.img_url||''}" alt="${f.descripcion||''}" loading="lazy" onerror="this.style.background='#eee'">
+      <div class="pthumb-lbl">
+        <div>${f.descripcion||''}</div>
+        <div style="opacity:0.7;font-size:9px">${fmtD(f.fecha)}</div>
+      </div>
+      ${isAdmin?`<button onclick="delAvanceFoto('${f.id}')" style="position:absolute;top:6px;right:6px;background:rgba(163,45,45,0.85);color:white;border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">✕</button>`:''}
+    </div>`).join('')+'</div>';
+}
+async function delAvanceFoto(id){
+  if(!confirm('¿Eliminar esta foto de avance?'))return;
+  await sb.from('avance_fotos').delete().eq('id',id);
+  loadAvance('todos');
 }
 
 // ─── PROYECTO NOVEDADES ───────────────────────────
