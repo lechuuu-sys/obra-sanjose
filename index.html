@@ -156,9 +156,14 @@ textarea{resize:vertical;min-height:70px}
     <div class="ltitle"><h1>Conj. Res. San José</h1><p>Sistema de Gestión de Obra</p></div>
     <div id="lerr" class="lerr">Usuario o contraseña incorrectos</div>
     <div class="lfield"><label>Correo de usuario</label><input type="text" id="lu" placeholder="usuario@sanjose.com" autocomplete="username"></div>
-    <div class="lfield"><label>Contraseña</label><input type="password" id="lp" placeholder="••••••••" autocomplete="current-password"></div>
+    <div class="lfield">
+      <label>Contraseña</label>
+      <div style="position:relative">
+        <input type="password" id="lp" placeholder="••••••••" autocomplete="current-password" style="padding-right:40px">
+        <button type="button" onclick="togglePass()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--tx3);padding:0;line-height:1;display:flex;align-items:center" id="eye-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+    </div>
     <button class="lbtn" onclick="doLogin()">Ingresar</button>
-
   </div>
 </div>
 
@@ -227,8 +232,9 @@ textarea{resize:vertical;min-height:70px}
       <div class="card"><div class="ctitle">Actividades ejecutadas</div><textarea id="d-aej" rows="3" placeholder="Describe brevemente las actividades realizadas hoy..."></textarea></div>
       <button class="btn bp bfull" onclick="guardarDiario()">Guardar registro del día</button>
       <div id="dok" class="hidden alrt alrt-ok mt8">Registro guardado correctamente.</div>
+
       <div class="divider" style="margin:16px 0"></div>
-      <div style="font-size:12px;font-weight:700;color:var(--b800);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Registros anteriores</div>
+      <div style="font-size:12px;font-weight:700;color:var(--b800);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Historial por semana</div>
       <div id="dhist"></div>
     </div>
 
@@ -299,6 +305,21 @@ textarea{resize:vertical;min-height:70px}
       </div>
       <div id="gtbar" class="hidden gtbar"><div style="font-size:13px;font-weight:600;color:var(--b800)">Total del período</div><div id="gtnum" style="font-size:20px;font-weight:800;color:var(--b900)"></div></div>
       <div id="glst"><div class="empty"><div class="eicon">💰</div>Sin gastos registrados</div></div>
+
+      <!-- Modal edición gasto — solo admin -->
+      <div id="g-edit-modal" class="hidden">
+        <div class="card" style="border:1.5px solid var(--b200);margin-top:12px">
+          <div class="ctitle">Editar gasto</div>
+          <input type="hidden" id="g-edit-id">
+          <div class="r2"><div><label>Fecha</label><input type="date" id="g-edit-f"></div><div><label>Categoría</label><select id="g-edit-c"><option value="Materiales">Materiales</option><option value="Equipos">Equipos</option><option value="Viáticos">Viáticos</option><option value="Documentos">Documentos</option><option value="Otros">Otros</option></select></div></div>
+          <label>Nombre</label><input type="text" id="g-edit-n">
+          <div class="r2 mt8"><div><label>Cantidad</label><input type="text" id="g-edit-q"></div><div><label>Costo</label><input type="number" id="g-edit-v" min="0" step="0.01"></div></div>
+          <div class="bgrp">
+            <button class="btn bp" onclick="updateGasto()">Guardar cambios</button>
+            <button class="btn bs" onclick="document.getElementById('g-edit-modal').classList.add('hidden')">Cancelar</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- FOTOS -->
@@ -479,7 +500,7 @@ textarea{resize:vertical;min-height:70px}
           </div>
           <div style="background:var(--bg2);border-radius:10px;padding:12px 14px;border:0.5px solid var(--bdr)">
             <div style="font-weight:700;font-size:14px;color:var(--b800)">Nivel 3 · 80.23 m²</div>
-            <div style="font-size:13px;color:var(--tx2);margin-top:4px">Disponible en 2 y 3 habitaciones · Doble balcón, hab. principal con baño y terraza</div>
+            <div style="font-size:13px;color:var(--tx2);margin-top:4px">Disponible en 2 y 3 habitaciones · Doble balcón, hab. principal con baño y balcón</div>
           </div>
         </div>
       </div>
@@ -556,6 +577,18 @@ textarea{resize:vertical;min-height:70px}
 </div>
 
 <script>
+function togglePass(){
+  const inp=document.getElementById('lp');
+  const btn=document.getElementById('eye-btn');
+  if(inp.type==='password'){
+    inp.type='text';
+    btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+  } else {
+    inp.type='password';
+    btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  }
+}
+
 const SB_URL='https://edsgobmhvsbejrwobkts.supabase.co';
 const SB_KEY='sb_publishable_AwFS1c0GtxhgOsJ_lh6-4A_h8GEotXp';
 const sb=supabase.createClient(SB_URL,SB_KEY);
@@ -696,24 +729,262 @@ async function guardarDiario(){
   showOk('dok');loadDH();
 }
 
+function fechaToSemana(fechaStr){
+  const inicio=new Date(Date.UTC(2026,3,13));
+  const d=new Date(fechaStr+'T12:00:00Z');
+  const diff=Math.floor((d-inicio)/(7*24*60*60*1000));
+  return Math.max(1,diff+1);
+}
+
+function semanaRango(sem){
+  const inicio=new Date(Date.UTC(2026,3,13));
+  const lunes=new Date(inicio.getTime()+(sem-1)*7*24*60*60*1000);
+  const viernes=new Date(lunes.getTime()+4*24*60*60*1000);
+  const fmt=d=>d.toLocaleDateString('es-VE',{day:'2-digit',month:'short'});
+  return `${fmt(lunes)} – ${fmt(viernes)}`;
+}
+
 async function loadDH(){
   const el=document.getElementById('dhist');
-  const {data}=await sb.from('diarios').select('*,novedades(*)').order('fecha',{ascending:false}).limit(7);
-  if(!data||!data.length){el.innerHTML='';return}
+  const {data}=await sb.from('diarios').select('*,novedades(*)').order('fecha',{ascending:false});
+  if(!data||!data.length){el.innerHTML='<div class="empty" style="padding:16px"><div style="color:var(--tx3);font-size:13px">Sin registros aún</div></div>';return}
+  const isAdmin=CU&&CU.rol==='admin';
   const ci={soleado:'☀️',nublado:'☁️',lluvioso:'🌧️',tormenta:'⛈️'};
-  el.innerHTML='<div class="ilist">'+data.map(d=>`
-    <div class="irow" style="flex-direction:column;align-items:stretch">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div class="irow-t">${fmtD(d.fecha)}</div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <span style="font-size:16px">${ci[d.clima_estado]||'☀️'}</span>
-          ${d.novedades&&d.novedades.length?`<span class="badge ba">${d.novedades.length} nov.</span>`:''}
-          <span class="badge bb">${d.personal||0} pers.</span>
+
+  // Group by semana
+  const bySem={};
+  data.forEach(d=>{
+    const s=fechaToSemana(d.fecha);
+    if(!bySem[s])bySem[s]=[];
+    bySem[s].push(d);
+  });
+
+  const sems=Object.keys(bySem).map(Number).sort((a,b)=>b-a);
+
+  el.innerHTML=sems.map(sem=>{
+    const dias=bySem[sem];
+    const hasIncidencias=dias.some(d=>d.novedades&&d.novedades.some(n=>n.prioridad==='alta'));
+    return `
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        background:var(--b800);color:white;border-radius:10px;padding:10px 14px;
+        cursor:pointer;user-select:none" onclick="toggleSemana(${sem})">
+        <div>
+          <span style="font-weight:700;font-size:14px">Semana ${sem}</span>
+          <span style="font-size:12px;opacity:0.75;margin-left:8px">${semanaRango(sem)}</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          ${hasIncidencias?'<span style="background:var(--r50);color:var(--r800);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600">⚠ Incidencia</span>':''}
+          <span style="font-size:12px;opacity:0.7">${dias.length} días</span>
+          <button onclick="event.stopPropagation();generarPDF(${sem})" style="background:rgba(255,255,255,0.15);border:none;color:white;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer">PDF</button>
+          <span id="sem-arr-${sem}" style="font-size:12px">▼</span>
         </div>
       </div>
-      <div class="irow-s" style="margin-top:3px">${d.hora_inicio||'--'}–${d.hora_cierre||'--'} · ${d.clima_estado||''} ${d.lluvia_impacto?'· '+d.lluvia_impacto:''}</div>
-      ${d.actividades_ejecutadas?`<div style="font-size:12px;margin-top:6px;color:var(--tx2);border-top:0.5px solid var(--bdr);padding-top:6px">${d.actividades_ejecutadas}</div>`:''}
-    </div>`).join('')+'</div>';
+      <div id="sem-body-${sem}" class="hidden" style="margin-top:6px;display:flex;flex-direction:column;gap:6px">
+        ${dias.map(d=>`
+          <div style="background:var(--bg2);border-radius:8px;border:0.5px solid var(--bdr);overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;user-select:none" onclick="toggleDia('${d.id}')">
+              <div>
+                <div style="font-weight:600;font-size:13px;color:var(--tx)">${fmtD(d.fecha)}</div>
+                <div style="font-size:11px;color:var(--tx3);margin-top:2px">${d.hora_inicio||'--'}–${d.hora_cierre||'--'} · ${ci[d.clima_estado]||'☀️'} ${d.personal||0} pers.</div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center">
+                ${d.novedades&&d.novedades.length?`<span class="badge ba">${d.novedades.length} nov.</span>`:''}
+                ${isAdmin?`<button onclick="event.stopPropagation();delDiario('${d.id}')" style="background:var(--r50);color:var(--r800);border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">✕</button>`:''}
+                <span id="dia-arr-${d.id}" style="font-size:11px;color:var(--tx3)">▼</span>
+              </div>
+            </div>
+            <div id="dia-body-${d.id}" class="hidden" style="padding:0 12px 12px;border-top:0.5px solid var(--bdr)">
+              <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div style="background:white;border-radius:8px;padding:8px 10px">
+                  <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:3px">Clima</div>
+                  <div style="font-size:13px;color:var(--tx)">${ci[d.clima_estado]||'☀️'} ${d.clima_estado||'—'}</div>
+                  ${d.lluvia_impacto?`<div style="font-size:11px;color:var(--r600);margin-top:2px">${d.lluvia_impacto}</div>`:''}
+                </div>
+                <div style="background:white;border-radius:8px;padding:8px 10px">
+                  <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:3px">Personal</div>
+                  <div style="font-size:18px;font-weight:700;color:var(--b800)">${d.personal||0}</div>
+                </div>
+              </div>
+              ${d.actividades_ejecutadas?`
+              <div style="margin-top:8px;background:white;border-radius:8px;padding:8px 10px">
+                <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Actividades ejecutadas</div>
+                <div style="font-size:13px;color:var(--tx2);line-height:1.5">${d.actividades_ejecutadas}</div>
+              </div>`:''}
+              ${d.clima_obs?`
+              <div style="margin-top:8px;background:white;border-radius:8px;padding:8px 10px">
+                <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Obs. clima</div>
+                <div style="font-size:13px;color:var(--tx2)">${d.clima_obs}</div>
+              </div>`:''}
+              ${d.novedades&&d.novedades.length?`
+              <div style="margin-top:8px">
+                <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:6px">Novedades</div>
+                ${d.novedades.map(n=>`
+                  <div style="background:white;border-radius:8px;padding:7px 10px;margin-bottom:4px;border-left:3px solid ${n.prioridad==='alta'?'#E24B4A':n.prioridad==='media'?'#EF9F27':'#378ADD'}">
+                    <div style="font-size:12px;color:var(--tx)">${n.texto}</div>
+                    <div style="display:flex;gap:4px;margin-top:3px">
+                      <span class="badge bb" style="font-size:10px">${n.tipo}</span>
+                      <span class="badge ${n.prioridad==='alta'?'br':n.prioridad==='media'?'ba':'bgr'}" style="font-size:10px">${n.prioridad}</span>
+                    </div>
+                  </div>`).join('')}
+              </div>`:''}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSemana(sem){
+  const body=document.getElementById('sem-body-'+sem);
+  const arr=document.getElementById('sem-arr-'+sem);
+  const open=body.classList.toggle('hidden');
+  if(arr)arr.textContent=open?'▼':'▲';
+}
+function toggleDia(id){
+  const body=document.getElementById('dia-body-'+id);
+  const arr=document.getElementById('dia-arr-'+id);
+  if(!body)return;
+  const open=body.classList.toggle('hidden');
+  if(arr)arr.textContent=open?'▼':'▲';
+}
+async function delDiario(id){
+  if(!confirm('¿Eliminar este registro del día?'))return;
+  await sb.from('novedades').delete().eq('diario_id',id);
+  await sb.from('diarios').delete().eq('id',id);
+  loadDH();
+}
+
+async function generarPDF(sem){
+  try{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const lm=16,pw=178;
+    let y=0;
+
+    // Cabecera azul
+    doc.setFillColor(12,68,124);
+    doc.rect(0,0,210,18,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(10);doc.setFont('helvetica','bold');
+    doc.text('CONJUNTO RESIDENCIAL SAN JOSÉ',105,7,{align:'center'});
+    doc.setFontSize(8);doc.setFont('helvetica','normal');
+    doc.text('Libro Diario de Obra — Reporte Semanal',105,13,{align:'center'});
+
+    y=24;
+    doc.setTextColor(12,68,124);
+    doc.setFontSize(14);doc.setFont('helvetica','bold');
+    doc.text(`Semana ${sem}`,lm,y);
+    y+=6;
+    doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(107,127,160);
+    doc.text(`Período: ${semanaRango(sem)}   ·   Generado: ${new Date().toLocaleDateString('es-VE')}`,lm,y);
+    y+=4;
+    doc.setDrawColor(183,212,244);doc.setLineWidth(0.5);doc.line(lm,y,210-lm,y);
+    y+=6;
+
+    // Registros de la semana
+    const {data:diasData}=await sb.from('diarios').select('*,novedades(*)').order('fecha',{ascending:true});
+    const dias=(diasData||[]).filter(d=>fechaToSemana(d.fecha)===sem);
+    const ci={soleado:'Soleado',nublado:'Nublado',lluvioso:'Lluvioso',tormenta:'Tormenta'};
+    const impactos=dias.filter(d=>d.novedades&&d.novedades.some(n=>n.prioridad==='alta'));
+
+    const secHeader=(title,color=[12,68,124])=>{
+      if(y>260){doc.addPage();y=20}
+      doc.setFillColor(...color);
+      doc.roundedRect(lm,y,pw,6,1,1,'F');
+      doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');
+      doc.text(title.toUpperCase(),lm+3,y+4.2);
+      y+=9;doc.setTextColor(26,40,64);doc.setFont('helvetica','normal');
+    };
+
+    secHeader('Registros diarios');
+    if(!dias.length){
+      doc.setFontSize(9);doc.text('Sin registros esta semana.',lm+2,y);y+=8;
+    }
+    dias.forEach(d=>{
+      if(y>255){doc.addPage();y=20}
+      doc.setFillColor(240,245,252);
+      doc.roundedRect(lm,y,pw,5,1,1,'F');
+      doc.setTextColor(12,68,124);doc.setFontSize(8.5);doc.setFont('helvetica','bold');
+      doc.text(fmtD(d.fecha),lm+2,y+3.5);
+      doc.setTextColor(107,127,160);doc.setFont('helvetica','normal');doc.setFontSize(8);
+      doc.text(`${d.hora_inicio||'--'}–${d.hora_cierre||'--'}  ·  ${ci[d.clima_estado]||''}  ·  ${d.personal||0} pers.`,lm+45,y+3.5);
+      y+=7;
+      if(d.actividades_ejecutadas){
+        const lines=doc.splitTextToSize(d.actividades_ejecutadas,pw-6);
+        doc.setTextColor(61,80,112);doc.setFontSize(8);
+        doc.text(lines,lm+4,y);y+=lines.length*4+1;
+      }
+      if(d.novedades&&d.novedades.length){
+        d.novedades.forEach(n=>{
+          if(y>260){doc.addPage();y=20}
+          const pc=n.prioridad==='alta'?[227,75,74]:n.prioridad==='media'?[239,159,39]:[136,135,128];
+          doc.setFillColor(...pc);doc.circle(lm+5,y+0.5,1.2,'F');
+          const lines=doc.splitTextToSize(`[${n.tipo}] ${n.texto}`,pw-10);
+          doc.setTextColor(26,40,64);doc.setFontSize(8);
+          doc.text(lines,lm+8,y+1.5);y+=lines.length*4+1;
+        });
+      }
+      y+=3;
+    });
+
+    // Incidencias
+    if(impactos.length){
+      if(y>250){doc.addPage();y=20}
+      secHeader('Incidencias de la semana',[163,45,45]);
+      impactos.forEach(d=>{
+        const novAltas=d.novedades.filter(n=>n.prioridad==='alta');
+        novAltas.forEach(n=>{
+          if(y>260){doc.addPage();y=20}
+          doc.setFontSize(8.5);doc.setTextColor(26,40,64);
+          doc.setFont('helvetica','bold');doc.text(fmtD(d.fecha)+':',lm+2,y);
+          doc.setFont('helvetica','normal');
+          const lines=doc.splitTextToSize(n.texto,pw-24);
+          doc.text(lines,lm+24,y);y+=lines.length*4.5+2;
+        });
+      });
+    }
+
+    // Inventario
+    if(y>240){doc.addPage();y=20}
+    secHeader('Inventario — stock actual al momento del reporte');
+    const {data:inv}=await sb.from('inventario').select('*').order('nombre');
+    if(!inv||!inv.length){
+      doc.setFontSize(9);doc.text('Sin materiales registrados.',lm+2,y);y+=8;
+    } else {
+      // Table header
+      doc.setFillColor(220,230,245);
+      doc.rect(lm,y,pw,5,'F');
+      doc.setTextColor(12,68,124);doc.setFontSize(7.5);doc.setFont('helvetica','bold');
+      doc.text('Material',lm+2,y+3.5);
+      doc.text('Unidad',lm+100,y+3.5);
+      doc.text('Stock',lm+140,y+3.5,{align:'right'});
+      y+=5;
+      inv.forEach((m,i)=>{
+        if(y>270){doc.addPage();y=20}
+        if(i%2===0){doc.setFillColor(248,251,255);doc.rect(lm,y,pw,5,'F')}
+        doc.setTextColor(26,40,64);doc.setFont('helvetica','normal');doc.setFontSize(8);
+        doc.text(m.nombre,lm+2,y+3.5);
+        doc.text(m.unidad||'',lm+100,y+3.5);
+        doc.setFont('helvetica','bold');
+        doc.setTextColor(m.stock<=0?163:12,m.stock<=0?45:68,m.stock<=0?45:124);
+        doc.text(String(m.stock),lm+140,y+3.5,{align:'right'});
+        y+=5;
+      });
+    }
+
+    // Footer en todas las páginas
+    const pc=doc.internal.getNumberOfPages();
+    for(let i=1;i<=pc;i++){
+      doc.setPage(i);
+      doc.setFillColor(12,68,124);doc.rect(0,286,210,11,'F');
+      doc.setTextColor(255,255,255);doc.setFontSize(7);
+      doc.text('Conj. Res. San José — Libro Diario de Obra',lm,292);
+      doc.text(`Semana ${sem}  ·  Pág. ${i}/${pc}`,210-lm,292,{align:'right'});
+    }
+
+    doc.save(`DiarioObra_S${sem}_SanJose.pdf`);
+  }catch(e){alert('Error al generar PDF: '+e.message);console.error(e)}
 }
 
 // ─── ACTIVIDADES ──────────────────────
@@ -838,6 +1109,7 @@ async function loadGastos(){
   if(!data||!data.length){el.innerHTML='<div class="empty"><div class="eicon">💰</div>Sin gastos registrados</div>';tb.classList.add('hidden');return}
   const total=data.reduce((s,g)=>s+(g.costo||0),0);
   tb.classList.remove('hidden');tn.textContent=total.toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const isAdmin=CU&&CU.rol==='admin';
   const bd={};data.forEach(g=>{if(!bd[g.fecha])bd[g.fecha]=[];bd[g.fecha].push(g)});
   let html='';
   Object.keys(bd).sort().reverse().forEach(f=>{
@@ -852,11 +1124,36 @@ async function loadGastos(){
       <div class="ginfo"><div class="gnm">${g.nombre}</div><div class="gmt"><span class="badge ${gBadge[g.categoria]||'bgr'}">${g.categoria}</span>${g.cantidad?' · '+g.cantidad:''}</div></div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <div class="gcost">${(g.costo||0).toLocaleString('es-VE',{minimumFractionDigits:2})}</div>
-        <button class="btn bd bsm" onclick="delGasto('${g.id}')">✕</button>
+        <div style="display:flex;gap:4px">
+          ${isAdmin?`<button class="btn bs bsm" onclick="editGasto('${g.id}','${g.fecha}','${g.categoria}',${JSON.stringify(g.nombre).replace(/'/g,"\\'")},'${g.cantidad||''}',${g.costo||0})">✏</button>`:''}
+          <button class="btn bd bsm" onclick="delGasto('${g.id}')">✕</button>
+        </div>
       </div>
     </div>`});
     html+='</div>';
   });el.innerHTML=html;
+}
+function editGasto(id,fecha,cat,nombre,cantidad,costo){
+  document.getElementById('g-edit-id').value=id;
+  document.getElementById('g-edit-f').value=fecha;
+  document.getElementById('g-edit-c').value=cat;
+  document.getElementById('g-edit-n').value=nombre;
+  document.getElementById('g-edit-q').value=cantidad;
+  document.getElementById('g-edit-v').value=costo;
+  document.getElementById('g-edit-modal').classList.remove('hidden');
+  document.getElementById('g-edit-modal').scrollIntoView({behavior:'smooth'});
+}
+async function updateGasto(){
+  const id=document.getElementById('g-edit-id').value;
+  await sb.from('gastos').update({
+    fecha:document.getElementById('g-edit-f').value,
+    nombre:document.getElementById('g-edit-n').value,
+    categoria:document.getElementById('g-edit-c').value,
+    cantidad:document.getElementById('g-edit-q').value,
+    costo:parseFloat(document.getElementById('g-edit-v').value)||0,
+  }).eq('id',id);
+  document.getElementById('g-edit-modal').classList.add('hidden');
+  loadGastos();
 }
 function clearGFil(){document.getElementById('gfi').value='';document.getElementById('gff').value='';loadGastos()}
 async function delGasto(id){if(!confirm('¿Eliminar este gasto?'))return;await sb.from('gastos').delete().eq('id',id);loadGastos()}
