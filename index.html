@@ -732,8 +732,8 @@ async function guardarDiario(){
   const semActual=getProyWeek();
   const body=document.getElementById('sem-body-'+semActual);
   const arr=document.getElementById('sem-arr-'+semActual);
-  if(body&&body.classList.contains('hidden')){
-    body.classList.remove('hidden');
+  if(body&&body.style.display==='none'){
+    body.style.display='flex';
     if(arr)arr.textContent='▲';
   }
 }
@@ -789,7 +789,7 @@ async function loadDH(){
           <span id="sem-arr-${sem}" style="font-size:12px">▼</span>
         </div>
       </div>
-      <div id="sem-body-${sem}" class="hidden" style="margin-top:6px;display:flex;flex-direction:column;gap:6px">
+      <div id="sem-body-${sem}" style="display:none;margin-top:6px;flex-direction:column;gap:6px">
         ${dias.map(d=>`
           <div style="background:var(--bg2);border-radius:8px;border:0.5px solid var(--bdr);overflow:hidden">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;user-select:none" onclick="toggleDia('${d.id}')">
@@ -803,7 +803,7 @@ async function loadDH(){
                 <span id="dia-arr-${d.id}" style="font-size:11px;color:var(--tx3)">▼</span>
               </div>
             </div>
-            <div id="dia-body-${d.id}" class="hidden" style="padding:0 12px 12px;border-top:0.5px solid var(--bdr)">
+            <div id="dia-body-${d.id}" style="display:none;padding:0 12px 12px;border-top:0.5px solid var(--bdr)">
               <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
                 <div style="background:white;border-radius:8px;padding:8px 10px">
                   <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:3px">Clima</div>
@@ -848,15 +848,17 @@ function toggleSemana(sem){
   const body=document.getElementById('sem-body-'+sem);
   const arr=document.getElementById('sem-arr-'+sem);
   if(!body)return;
-  const isHidden=body.classList.toggle('hidden');
-  if(arr)arr.textContent=isHidden?'▼':'▲';
+  const isOpen=body.style.display==='flex';
+  body.style.display=isOpen?'none':'flex';
+  if(arr)arr.textContent=isOpen?'▼':'▲';
 }
 function toggleDia(id){
   const body=document.getElementById('dia-body-'+id);
   const arr=document.getElementById('dia-arr-'+id);
   if(!body)return;
-  const isHidden=body.classList.toggle('hidden');
-  if(arr)arr.textContent=isHidden?'▼':'▲';
+  const isOpen=body.style.display==='block';
+  body.style.display=isOpen?'none':'block';
+  if(arr)arr.textContent=isOpen?'▼':'▲';
 }
 async function delDiario(id){
   if(!confirm('¿Eliminar este registro del día?'))return;
@@ -1111,42 +1113,81 @@ async function saveGasto(){
   loadGastos();
 }
 async function loadGastos(){
-  const ini=document.getElementById('gfi').value;const fin=document.getElementById('gff').value;
+  const ini=document.getElementById('gfi').value;
+  const fin=document.getElementById('gff').value;
   let q=sb.from('gastos').select('*').order('fecha',{ascending:false}).order('created_at',{ascending:false});
-  if(ini)q=q.gte('fecha',ini);if(fin)q=q.lte('fecha',fin);
+  if(ini)q=q.gte('fecha',ini);
+  if(fin)q=q.lte('fecha',fin);
   const {data}=await q;
-  const el=document.getElementById('glst');const tb=document.getElementById('gtbar');const tn=document.getElementById('gtnum');
-  if(!data||!data.length){el.innerHTML='<div class="empty"><div class="eicon">💰</div>Sin gastos registrados</div>';tb.classList.add('hidden');return}
+  const el=document.getElementById('glst');
+  const tb=document.getElementById('gtbar');
+  const tn=document.getElementById('gtnum');
+  if(!data||!data.length){
+    el.innerHTML='<div class="empty"><div class="eicon">💰</div>Sin gastos registrados</div>';
+    tb.classList.add('hidden');return;
+  }
   const total=data.reduce((s,g)=>s+(g.costo||0),0);
-  tb.classList.remove('hidden');tn.textContent=total.toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  tb.classList.remove('hidden');
+  tn.textContent=total.toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2});
   const isAdmin=CU&&CU.rol==='admin';
-  const bd={};data.forEach(g=>{if(!bd[g.fecha])bd[g.fecha]=[];bd[g.fecha].push(g)});
-  let html='';
+  // Group by date
+  const bd={};
+  data.forEach(g=>{if(!bd[g.fecha])bd[g.fecha]=[];bd[g.fecha].push(g)});
+  el.innerHTML='';
   Object.keys(bd).sort().reverse().forEach(f=>{
-    const gs=bd[f];const dt=gs.reduce((s,g)=>s+(g.costo||0),0);
-    html+=`<div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px">
-        <div style="font-size:12px;font-weight:700;color:var(--b800)">${fmtD(f)}</div>
-        <div style="font-size:13px;font-weight:700;color:var(--b900)">${dt.toLocaleString('es-VE',{minimumFractionDigits:2})}</div>
-      </div>`;
-    gs.forEach(g=>{html+=`<div class="grow">
-      <div class="gcat">${gIcon[g.categoria]||'💼'}</div>
-      <div class="ginfo"><div class="gnm">${g.nombre}</div><div class="gmt"><span class="badge ${gBadge[g.categoria]||'bgr'}">${g.categoria}</span>${g.cantidad?' · '+g.cantidad:''}</div></div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        <div class="gcost">${(g.costo||0).toLocaleString('es-VE',{minimumFractionDigits:2})}</div>
-        <div style="display:flex;gap:4px">
-      ${isAdmin?`<button class="btn bs bsm" 
-        data-id="${g.id}" data-fecha="${g.fecha}" data-cat="${g.categoria}" 
-        data-nombre="${(g.nombre||'').replace(/"/g,'&quot;')}" 
-        data-cantidad="${(g.cantidad||'').replace(/"/g,'&quot;')}" 
-        data-costo="${g.costo||0}"
-        onclick="editGastoBtn(this)">✏</button>`:''}
-          <button class="btn bd bsm" onclick="delGasto('${g.id}')">✕</button>
-        </div>
-      </div>
-    </div>`});
-    html+='</div>';
-  });el.innerHTML=html;
+    const gs=bd[f];
+    const dt=gs.reduce((s,g)=>s+(g.costo||0),0);
+    const dayDiv=document.createElement('div');
+    dayDiv.style.marginBottom='14px';
+    // Day header
+    const hdr=document.createElement('div');
+    hdr.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px';
+    hdr.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--b800)">'+fmtD(f)+'</div>'+
+      '<div style="font-size:13px;font-weight:700;color:var(--b900)">'+dt.toLocaleString('es-VE',{minimumFractionDigits:2})+'</div>';
+    dayDiv.appendChild(hdr);
+    // Each gasto
+    gs.forEach(g=>{
+      const row=document.createElement('div');
+      row.className='grow';
+      // Icon
+      const cat=document.createElement('div');
+      cat.className='gcat';
+      cat.textContent=gIcon[g.categoria]||'💼';
+      row.appendChild(cat);
+      // Info
+      const info=document.createElement('div');
+      info.className='ginfo';
+      info.innerHTML='<div class="gnm">'+g.nombre+'</div>'+
+        '<div class="gmt"><span class="badge '+(gBadge[g.categoria]||'bgr')+'">'+g.categoria+'</span>'+
+        (g.cantidad?' · '+g.cantidad:'')+'</div>';
+      row.appendChild(info);
+      // Actions
+      const acts=document.createElement('div');
+      acts.style.cssText='display:flex;flex-direction:column;align-items:flex-end;gap:4px';
+      const cost=document.createElement('div');
+      cost.className='gcost';
+      cost.textContent=(g.costo||0).toLocaleString('es-VE',{minimumFractionDigits:2});
+      acts.appendChild(cost);
+      const btns=document.createElement('div');
+      btns.style.cssText='display:flex;gap:4px';
+      if(isAdmin){
+        const editBtn=document.createElement('button');
+        editBtn.className='btn bs bsm';
+        editBtn.textContent='✏';
+        editBtn.onclick=()=>editGasto(g.id,g.fecha,g.categoria,g.nombre,g.cantidad||'',g.costo||0);
+        btns.appendChild(editBtn);
+      }
+      const delBtn=document.createElement('button');
+      delBtn.className='btn bd bsm';
+      delBtn.textContent='✕';
+      delBtn.onclick=()=>delGasto(g.id);
+      btns.appendChild(delBtn);
+      acts.appendChild(btns);
+      row.appendChild(acts);
+      dayDiv.appendChild(row);
+    });
+    el.appendChild(dayDiv);
+  });
 }
 function editGastoBtn(btn){
   const id=btn.dataset.id;
