@@ -164,6 +164,7 @@ textarea{resize:vertical;min-height:70px}
       </div>
     </div>
     <button class="lbtn" onclick="doLogin()">Ingresar</button>
+    <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--tx3);opacity:0.6">v1.12</div>
   </div>
 </div>
 
@@ -664,7 +665,8 @@ function getProyWeek(){
 
 function initForms(){
   const t=td(),n=tn();
-  document.getElementById('d-fecha').value=t;document.getElementById('d-ini').value=n;
+  document.getElementById('d-fecha').value=t;
+  document.getElementById('d-ini').value='08:00';
   document.getElementById('ff').value=t;document.getElementById('g-f').value=t;
   document.getElementById('av-fecha').value=t;
   document.getElementById('av-sem-lbl').textContent='Semana '+getProyWeek();
@@ -755,93 +757,162 @@ function semanaRango(sem){
 
 async function loadDH(){
   const el=document.getElementById('dhist');
-  const {data}=await sb.from('diarios').select('*,novedades(*)').order('fecha',{ascending:false});
-  if(!data||!data.length){el.innerHTML='<div class="empty" style="padding:16px"><div style="color:var(--tx3);font-size:13px">Sin registros aún</div></div>';return}
+  const {data,error}=await sb.from('diarios').select('*,novedades(*)').order('fecha',{ascending:false});
+  if(error){console.error('loadDH error:',error);return}
+  if(!data||!data.length){
+    el.innerHTML='<div class="empty" style="padding:16px"><div style="color:var(--tx3);font-size:13px">Sin registros aún</div></div>';
+    return;
+  }
   const isAdmin=CU&&CU.rol==='admin';
   const ci={soleado:'☀️',nublado:'☁️',lluvioso:'🌧️',tormenta:'⛈️'};
 
-  // Group by semana
+  // Agrupar por semana
   const bySem={};
   data.forEach(d=>{
     const s=fechaToSemana(d.fecha);
     if(!bySem[s])bySem[s]=[];
     bySem[s].push(d);
   });
-
   const sems=Object.keys(bySem).map(Number).sort((a,b)=>b-a);
 
-  el.innerHTML=sems.map(sem=>{
+  el.innerHTML='';
+  sems.forEach(sem=>{
     const dias=bySem[sem];
-    const hasIncidencias=dias.some(d=>d.novedades&&d.novedades.some(n=>n.prioridad==='alta'));
-    return `
-    <div style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;
-        background:var(--b800);color:white;border-radius:10px;padding:10px 14px;
-        cursor:pointer;user-select:none" onclick="toggleSemana(${sem})">
-        <div>
-          <span style="font-weight:700;font-size:14px">Semana ${sem}</span>
-          <span style="font-size:12px;opacity:0.75;margin-left:8px">${semanaRango(sem)}</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          ${hasIncidencias?'<span style="background:var(--r50);color:var(--r800);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600">⚠ Incidencia</span>':''}
-          <span style="font-size:12px;opacity:0.7">${dias.length} días</span>
-          <button onclick="event.stopPropagation();generarPDF(${sem})" style="background:rgba(255,255,255,0.15);border:none;color:white;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer">PDF</button>
-          <span id="sem-arr-${sem}" style="font-size:12px">▼</span>
-        </div>
-      </div>
-      <div id="sem-body-${sem}" style="display:none;margin-top:6px;flex-direction:column;gap:6px">
-        ${dias.map(d=>`
-          <div style="background:var(--bg2);border-radius:8px;border:0.5px solid var(--bdr);overflow:hidden">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;user-select:none" onclick="toggleDia('${d.id}')">
-              <div>
-                <div style="font-weight:600;font-size:13px;color:var(--tx)">${fmtD(d.fecha)}</div>
-                <div style="font-size:11px;color:var(--tx3);margin-top:2px">${d.hora_inicio||'--'}–${d.hora_cierre||'--'} · ${ci[d.clima_estado]||'☀️'} ${d.personal||0} pers.</div>
-              </div>
-              <div style="display:flex;gap:6px;align-items:center">
-                ${d.novedades&&d.novedades.length?`<span class="badge ba">${d.novedades.length} nov.</span>`:''}
-                ${isAdmin?`<button onclick="event.stopPropagation();delDiario('${d.id}')" style="background:var(--r50);color:var(--r800);border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">✕</button>`:''}
-                <span id="dia-arr-${d.id}" style="font-size:11px;color:var(--tx3)">▼</span>
-              </div>
-            </div>
-            <div id="dia-body-${d.id}" style="display:none;padding:0 12px 12px;border-top:0.5px solid var(--bdr)">
-              <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                <div style="background:white;border-radius:8px;padding:8px 10px">
-                  <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:3px">Clima</div>
-                  <div style="font-size:13px;color:var(--tx)">${ci[d.clima_estado]||'☀️'} ${d.clima_estado||'—'}</div>
-                  ${d.lluvia_impacto?`<div style="font-size:11px;color:var(--r600);margin-top:2px">${d.lluvia_impacto}</div>`:''}
-                </div>
-                <div style="background:white;border-radius:8px;padding:8px 10px">
-                  <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:3px">Personal</div>
-                  <div style="font-size:18px;font-weight:700;color:var(--b800)">${d.personal||0}</div>
-                </div>
-              </div>
-              ${d.actividades_ejecutadas?`
-              <div style="margin-top:8px;background:white;border-radius:8px;padding:8px 10px">
-                <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Actividades ejecutadas</div>
-                <div style="font-size:13px;color:var(--tx2);line-height:1.5">${d.actividades_ejecutadas}</div>
-              </div>`:''}
-              ${d.clima_obs?`
-              <div style="margin-top:8px;background:white;border-radius:8px;padding:8px 10px">
-                <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Obs. clima</div>
-                <div style="font-size:13px;color:var(--tx2)">${d.clima_obs}</div>
-              </div>`:''}
-              ${d.novedades&&d.novedades.length?`
-              <div style="margin-top:8px">
-                <div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:6px">Novedades</div>
-                ${d.novedades.map(n=>`
-                  <div style="background:white;border-radius:8px;padding:7px 10px;margin-bottom:4px;border-left:3px solid ${n.prioridad==='alta'?'#E24B4A':n.prioridad==='media'?'#EF9F27':'#378ADD'}">
-                    <div style="font-size:12px;color:var(--tx)">${n.texto}</div>
-                    <div style="display:flex;gap:4px;margin-top:3px">
-                      <span class="badge bb" style="font-size:10px">${n.tipo}</span>
-                      <span class="badge ${n.prioridad==='alta'?'br':n.prioridad==='media'?'ba':'bgr'}" style="font-size:10px">${n.prioridad}</span>
-                    </div>
-                  </div>`).join('')}
-              </div>`:''}
-            </div>
-          </div>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
+    const hasInc=dias.some(d=>d.novedades&&d.novedades.some(n=>n.prioridad==='alta'));
+
+    // Wrapper semana
+    const semWrap=document.createElement('div');
+    semWrap.style.marginBottom='12px';
+
+    // Header semana
+    const semHdr=document.createElement('div');
+    semHdr.style.cssText='display:flex;justify-content:space-between;align-items:center;background:var(--b800);color:white;border-radius:10px;padding:10px 14px;cursor:pointer;user-select:none';
+    semHdr.onclick=()=>toggleSemana(sem);
+
+    const semLeft=document.createElement('div');
+    semLeft.innerHTML='<span style="font-weight:700;font-size:14px">Semana '+sem+'</span>'+
+      '<span style="font-size:12px;opacity:0.75;margin-left:8px">'+semanaRango(sem)+'</span>';
+
+    const semRight=document.createElement('div');
+    semRight.style.cssText='display:flex;gap:8px;align-items:center';
+    if(hasInc){
+      const incBadge=document.createElement('span');
+      incBadge.style.cssText='background:var(--r50);color:var(--r800);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600';
+      incBadge.textContent='⚠ Incidencia';
+      semRight.appendChild(incBadge);
+    }
+    const diasCount=document.createElement('span');
+    diasCount.style.cssText='font-size:12px;opacity:0.7';
+    diasCount.textContent=dias.length+' días';
+    semRight.appendChild(diasCount);
+
+    const pdfBtn=document.createElement('button');
+    pdfBtn.style.cssText='background:rgba(255,255,255,0.15);border:none;color:white;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer';
+    pdfBtn.textContent='PDF';
+    pdfBtn.onclick=(e)=>{e.stopPropagation();generarPDF(sem)};
+    semRight.appendChild(pdfBtn);
+
+    const semArr=document.createElement('span');
+    semArr.id='sem-arr-'+sem;
+    semArr.style.cssText='font-size:12px';
+    semArr.textContent='▼';
+    semRight.appendChild(semArr);
+
+    semHdr.appendChild(semLeft);
+    semHdr.appendChild(semRight);
+    semWrap.appendChild(semHdr);
+
+    // Body semana
+    const semBody=document.createElement('div');
+    semBody.id='sem-body-'+sem;
+    semBody.style.cssText='display:none;flex-direction:column;gap:6px;margin-top:6px';
+    semWrap.appendChild(semBody);
+
+    // Días
+    dias.forEach(d=>{
+      const diaWrap=document.createElement('div');
+      diaWrap.style.cssText='background:var(--bg2);border-radius:8px;border:0.5px solid var(--bdr);overflow:hidden';
+
+      // Header día
+      const diaHdr=document.createElement('div');
+      diaHdr.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;user-select:none';
+      diaHdr.onclick=()=>toggleDia(d.id);
+
+      const diaLeft=document.createElement('div');
+      diaLeft.innerHTML='<div style="font-weight:600;font-size:13px;color:var(--tx)">'+fmtD(d.fecha)+'</div>'+
+        '<div style="font-size:11px;color:var(--tx3);margin-top:2px">'+(d.hora_inicio||'--')+'–'+(d.hora_cierre||'--')+
+        ' · '+(ci[d.clima_estado]||'☀️')+' '+(d.personal||0)+' pers.</div>';
+
+      const diaRight=document.createElement('div');
+      diaRight.style.cssText='display:flex;gap:6px;align-items:center';
+      if(d.novedades&&d.novedades.length){
+        const novBadge=document.createElement('span');
+        novBadge.className='badge ba';
+        novBadge.textContent=d.novedades.length+' nov.';
+        diaRight.appendChild(novBadge);
+      }
+      if(isAdmin){
+        const delBtn=document.createElement('button');
+        delBtn.style.cssText='background:var(--r50);color:var(--r800);border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer';
+        delBtn.textContent='✕';
+        delBtn.onclick=(e)=>{e.stopPropagation();delDiario(d.id)};
+        diaRight.appendChild(delBtn);
+      }
+      const diaArr=document.createElement('span');
+      diaArr.id='dia-arr-'+d.id;
+      diaArr.style.cssText='font-size:11px;color:var(--tx3)';
+      diaArr.textContent='▼';
+      diaRight.appendChild(diaArr);
+
+      diaHdr.appendChild(diaLeft);
+      diaHdr.appendChild(diaRight);
+      diaWrap.appendChild(diaHdr);
+
+      // Body día
+      const diaBody=document.createElement('div');
+      diaBody.id='dia-body-'+d.id;
+      diaBody.style.cssText='display:none;padding:0 12px 12px;border-top:0.5px solid var(--bdr)';
+
+      let bodyHTML='<div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+      bodyHTML+='<div style="background:white;border-radius:8px;padding:8px 10px">';
+      bodyHTML+='<div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:3px">Clima</div>';
+      bodyHTML+='<div style="font-size:13px;color:var(--tx)">'+(ci[d.clima_estado]||'☀️')+' '+(d.clima_estado||'—')+'</div>';
+      if(d.lluvia_impacto)bodyHTML+='<div style="font-size:11px;color:var(--r600);margin-top:2px">'+d.lluvia_impacto+'</div>';
+      bodyHTML+='</div>';
+      bodyHTML+='<div style="background:white;border-radius:8px;padding:8px 10px">';
+      bodyHTML+='<div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:3px">Personal</div>';
+      bodyHTML+='<div style="font-size:18px;font-weight:700;color:var(--b800)">'+(d.personal||0)+'</div>';
+      bodyHTML+='</div></div>';
+      if(d.actividades_ejecutadas){
+        bodyHTML+='<div style="margin-top:8px;background:white;border-radius:8px;padding:8px 10px">';
+        bodyHTML+='<div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Actividades ejecutadas</div>';
+        bodyHTML+='<div style="font-size:13px;color:var(--tx2);line-height:1.5">'+d.actividades_ejecutadas+'</div></div>';
+      }
+      if(d.clima_obs){
+        bodyHTML+='<div style="margin-top:8px;background:white;border-radius:8px;padding:8px 10px">';
+        bodyHTML+='<div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:4px">Obs. clima</div>';
+        bodyHTML+='<div style="font-size:13px;color:var(--tx2)">'+d.clima_obs+'</div></div>';
+      }
+      if(d.novedades&&d.novedades.length){
+        bodyHTML+='<div style="margin-top:8px">';
+        bodyHTML+='<div style="font-size:10px;color:var(--tx3);font-weight:600;text-transform:uppercase;margin-bottom:6px">Novedades</div>';
+        d.novedades.forEach(n=>{
+          const col=n.prioridad==='alta'?'#E24B4A':n.prioridad==='media'?'#EF9F27':'#378ADD';
+          const badgeClass=n.prioridad==='alta'?'br':n.prioridad==='media'?'ba':'bgr';
+          bodyHTML+='<div style="background:white;border-radius:8px;padding:7px 10px;margin-bottom:4px;border-left:3px solid '+col+'">';
+          bodyHTML+='<div style="font-size:12px;color:var(--tx)">'+n.texto+'</div>';
+          bodyHTML+='<div style="display:flex;gap:4px;margin-top:3px"><span class="badge bb" style="font-size:10px">'+n.tipo+'</span>';
+          bodyHTML+='<span class="badge '+badgeClass+'" style="font-size:10px">'+n.prioridad+'</span></div></div>';
+        });
+        bodyHTML+='</div>';
+      }
+      diaBody.innerHTML=bodyHTML;
+      diaWrap.appendChild(diaBody);
+      semBody.appendChild(diaWrap);
+    });
+
+    el.appendChild(semWrap);
+  });
 }
 
 function toggleSemana(sem){
