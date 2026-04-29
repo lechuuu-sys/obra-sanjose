@@ -757,12 +757,15 @@ function semanaRango(sem){
 
 async function loadDH(){
   const el=document.getElementById('dhist');
-  const {data,error}=await sb.from('diarios').select('*,novedades(*)').order('fecha',{ascending:false});
-  if(error){console.error('loadDH error:',error);return}
-  if(!data||!data.length){
+  const {data:diarios,error}=await sb.from('diarios').select('*').order('fecha',{ascending:false});
+  if(error){console.error('loadDH error:',error);el.innerHTML='<div class="empty" style="padding:16px"><div style="color:var(--r600);font-size:13px">Error al cargar: '+error.message+'</div></div>';return}
+  if(!diarios||!diarios.length){
     el.innerHTML='<div class="empty" style="padding:16px"><div style="color:var(--tx3);font-size:13px">Sin registros aún</div></div>';
     return;
   }
+  const ids=diarios.map(d=>d.id);
+  const {data:todasNovs}=await sb.from('novedades').select('*').in('diario_id',ids);
+  const data=diarios.map(d=>({...d,novedades:(todasNovs||[]).filter(n=>n.diario_id===d.id)}));
   const isAdmin=CU&&CU.rol==='admin';
   const ci={soleado:'☀️',nublado:'☁️',lluvioso:'🌧️',tormenta:'⛈️'};
 
@@ -966,8 +969,11 @@ async function generarPDF(sem){
     y+=6;
 
     // Registros de la semana
-    const {data:diasData}=await sb.from('diarios').select('*,novedades(*)').order('fecha',{ascending:true});
-    const dias=(diasData||[]).filter(d=>fechaToSemana(d.fecha)===sem);
+    const {data:diasData}=await sb.from('diarios').select('*').order('fecha',{ascending:true});
+    const diasIds=(diasData||[]).map(d=>d.id);
+    const {data:pdfNovs}=await sb.from('novedades').select('*').in('diario_id',diasIds);
+    const allDias=(diasData||[]).map(d=>({...d,novedades:(pdfNovs||[]).filter(n=>n.diario_id===d.id)}));
+    const dias=allDias.filter(d=>fechaToSemana(d.fecha)===sem);
     const ci={soleado:'Soleado',nublado:'Nublado',lluvioso:'Lluvioso',tormenta:'Tormenta'};
     const impactos=dias.filter(d=>d.novedades&&d.novedades.some(n=>n.prioridad==='alta'));
 
