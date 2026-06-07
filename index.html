@@ -164,7 +164,7 @@ textarea{resize:vertical;min-height:70px}
       </div>
     </div>
     <button class="lbtn" onclick="doLogin()">Ingresar</button>
-    <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--tx3);opacity:0.6">v1.14</div>
+    <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--tx3);opacity:0.6">v1.15</div>
   </div>
 </div>
 
@@ -262,6 +262,7 @@ textarea{resize:vertical;min-height:70px}
       <div class="itabs">
         <button class="itab itab-e" id="ite" onclick="switchInv('e')">+ Añadir material</button>
         <button class="itab" id="its" onclick="switchInv('s')">− Extraer material</button>
+        <button class="itab" id="ith" onclick="switchInv('h')">📋 Historial</button>
       </div>
       <div id="inv-e-frm">
         <div class="card" style="border:1.5px solid rgba(59,109,17,0.3)">
@@ -284,6 +285,16 @@ textarea{resize:vertical;min-height:70px}
           <div class="mt8"><label>Motivo / destino</label><input type="text" id="is-m" placeholder="Ej: Colado columnas eje B"></div>
           <div id="is-err" class="hidden" style="background:var(--r50);color:var(--r800);border-radius:8px;padding:10px;font-size:13px;margin-top:10px;font-weight:600;text-align:center"></div>
           <div class="bgrp"><button class="btn bd" onclick="regSalida()">Registrar extracción</button></div>
+        </div>
+      </div>
+      <div id="inv-h-frm" class="hidden">
+        <div class="card">
+          <div class="ctitle">Historial de movimientos</div>
+          <div class="r2" style="margin-bottom:10px">
+            <div><label>Material</label><select id="ih-mat" onchange="loadHistorial()"><option value="">— Todos —</option></select></div>
+            <div><label>Tipo</label><select id="ih-tipo" onchange="loadHistorial()"><option value="">Todos</option><option value="entrada">Entradas</option><option value="salida">Salidas</option></select></div>
+          </div>
+          <div id="ih-lst"><div class="empty"><div class="eicon">📋</div>Sin movimientos</div></div>
         </div>
       </div>
       <div class="card"><div class="ctitle">Stock actual</div><div id="istk"><div class="empty"><div class="eicon">📦</div>Sin materiales</div></div></div>
@@ -1123,9 +1134,74 @@ function switchInv(m){
   invMode=m;
   document.getElementById('inv-e-frm').classList.toggle('hidden',m!=='e');
   document.getElementById('inv-s-frm').classList.toggle('hidden',m!=='s');
+  document.getElementById('inv-h-frm').classList.toggle('hidden',m!=='h');
   document.getElementById('ite').className='itab'+(m==='e'?' itab-e':'');
   document.getElementById('its').className='itab'+(m==='s'?' itab-s':'');
+  document.getElementById('ith').className='itab'+(m==='h'?' itab-e':'');
   if(m==='s')popSalSel();
+  if(m==='h')loadHistorial();
+}
+async function loadHistorial(){
+  const el=document.getElementById('ih-lst');
+  const matSel=document.getElementById('ih-mat').value;
+  const tipoSel=document.getElementById('ih-tipo').value;
+  // Populate material filter if empty
+  const matEl=document.getElementById('ih-mat');
+  if(matEl.options.length<=1){
+    const {data:mats}=await sb.from('inventario').select('id,nombre').order('nombre');
+    (mats||[]).forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.nombre;matEl.appendChild(o);});
+  }
+  // Query movements
+  let q=sb.from('inventario_movimientos').select('*').order('fecha',{ascending:false}).order('created_at',{ascending:false});
+  if(matSel)q=q.eq('material_id',matSel);
+  if(tipoSel)q=q.eq('tipo',tipoSel);
+  const {data}=await q;
+  if(!data||!data.length){el.innerHTML='<div class="empty"><div class="eicon">📋</div>Sin movimientos registrados</div>';return;}
+  // Fetch material names separately
+  const matIds=[...new Set(data.map(mv=>mv.material_id))];
+  const {data:mdata}=await sb.from('inventario').select('id,nombre,unidad').in('id',matIds);
+  const matMap={};(mdata||[]).forEach(m=>{matMap[m.id]=m;});
+  const rows=document.createDocumentFragment();
+  data.forEach(mv=>{
+    const isEnt=mv.tipo==='entrada';
+    const wrap=document.createElement('div');
+    wrap.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;background:#fff;border:0.5px solid var(--bdr);margin-bottom:6px';
+    // Icon
+    const ico=document.createElement('div');
+    ico.style.cssText=`width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:${isEnt?'var(--g50)':'var(--r50)'}`;
+    ico.textContent=isEnt?'📥':'📤';
+    // Info
+    const info=document.createElement('div');
+    info.style.cssText='flex:1;min-width:0';
+    const nm=document.createElement('div');
+    nm.style.cssText='font-weight:700;font-size:13px;color:var(--tx)';
+    nm.textContent=(matMap[mv.material_id]&&matMap[mv.material_id].nombre)||'—';
+    const sub=document.createElement('div');
+    sub.style.cssText='font-size:11px;color:var(--tx3);margin-top:2px';
+    sub.textContent=mv.motivo||'Sin motivo';
+    const fecha=document.createElement('div');
+    fecha.style.cssText='font-size:11px;color:var(--tx3);margin-top:2px';
+    fecha.textContent=mv.fecha?fmtD(mv.fecha):'—';
+    info.appendChild(nm);info.appendChild(sub);info.appendChild(fecha);
+    // Right: cantidad + badge
+    const right=document.createElement('div');
+    right.style.cssText='text-align:right;flex-shrink:0';
+    const qty=document.createElement('div');
+    qty.style.cssText=`font-size:18px;font-weight:800;color:${isEnt?'var(--g800)':'var(--r600)'}`;
+    qty.textContent=(isEnt?'+':'-')+(mv.cantidad||0);
+    const un=document.createElement('div');
+    un.style.cssText='font-size:11px;color:var(--tx3)';
+    un.textContent=(matMap[mv.material_id]&&matMap[mv.material_id].unidad)||'';
+    const badge=document.createElement('span');
+    badge.className='badge '+(isEnt?'bgr':'br');
+    badge.style.cssText='font-size:10px;margin-top:4px;display:inline-block';
+    badge.textContent=isEnt?'entrada':'salida';
+    right.appendChild(qty);right.appendChild(un);right.appendChild(badge);
+    wrap.appendChild(ico);wrap.appendChild(info);wrap.appendChild(right);
+    rows.appendChild(wrap);
+  });
+  el.innerHTML='';
+  el.appendChild(rows);
 }
 async function regEntrada(){
   const n=document.getElementById('ie-n').value.trim();const c=parseFloat(document.getElementById('ie-c').value)||0;
