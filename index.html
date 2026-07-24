@@ -196,7 +196,7 @@ textarea{resize:vertical;min-height:70px}
       </div>
     </div>
     <button class="lbtn" onclick="doLogin()">Ingresar</button>
-    <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--tx3);opacity:0.6">v1.19</div>
+    <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--tx3);opacity:0.6">v1.20</div>
   </div>
 </div>
 
@@ -1651,15 +1651,21 @@ async function loadApartamentos(){
             if(v===est)o.selected=true;
             sel.appendChild(o);
           });
+          let estActual=est;
           sel.addEventListener('change',async()=>{
             const nuevoEst=sel.value;
+            const prev=estActual;
+            estActual=nuevoEst;
+            card.style.background=aptBg(nuevoEst);
+            st.style.color=aptColor(nuevoEst);
+            st.textContent=aptLabel(nuevoEst);
             const {error}=await sb.from('ventas_apartamentos').upsert({codigo:cod,estado:nuevoEst},{onConflict:'codigo'});
-            if(!error){
-              card.style.background=aptBg(nuevoEst);
-              st.style.color=aptColor(nuevoEst);
-              st.textContent=aptLabel(nuevoEst);
-            } else {
-              sel.value=est; // revert on error
+            if(error){
+              estActual=prev;
+              sel.value=prev;
+              card.style.background=aptBg(prev);
+              st.style.color=aptColor(prev);
+              st.textContent=aptLabel(prev);
             }
           });
           card.appendChild(sel);
@@ -1718,15 +1724,21 @@ async function loadEstacionamiento(){
         if(v===est)o.selected=true;
         sel.appendChild(o);
       });
+      let estActual=est;
       sel.addEventListener('change',async()=>{
         const nuevoEst=sel.value;
+        const prev=estActual;
+        estActual=nuevoEst;
+        card.style.background=estBg(nuevoEst);
+        st.style.color=estColor(nuevoEst);
+        st.textContent=nuevoEst==='reservado'?'RESERVADO':'DISPONIBLE';
         const {error}=await sb.from('ventas_estacionamiento').upsert({numero:num,estado:nuevoEst},{onConflict:'numero'});
-        if(!error){
-          card.style.background=estBg(nuevoEst);
-          st.style.color=estColor(nuevoEst);
-          st.textContent=nuevoEst==='reservado'?'RESERVADO':'DISPONIBLE';
-        } else {
-          sel.value=est; // revert on error
+        if(error){
+          estActual=prev;
+          sel.value=prev;
+          card.style.background=estBg(prev);
+          st.style.color=estColor(prev);
+          st.textContent=prev==='reservado'?'RESERVADO':'DISPONIBLE';
         }
       });
       card.appendChild(sel);
