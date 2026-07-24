@@ -196,7 +196,7 @@ textarea{resize:vertical;min-height:70px}
       </div>
     </div>
     <button class="lbtn" onclick="doLogin()">Ingresar</button>
-    <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--tx3);opacity:0.6">v1.17</div>
+    <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--tx3);opacity:0.6">v1.18</div>
   </div>
 </div>
 
@@ -1642,8 +1642,15 @@ async function loadApartamentos(){
             sel.appendChild(o);
           });
           sel.addEventListener('change',async()=>{
-            await sb.from('ventas_apartamentos').upsert({codigo:cod,estado:sel.value},{onConflict:'codigo'});
-            loadApartamentos();
+            const nuevoEst=sel.value;
+            const {error}=await sb.from('ventas_apartamentos').upsert({codigo:cod,estado:nuevoEst},{onConflict:'codigo'});
+            if(!error){
+              card.style.background=aptBg(nuevoEst);
+              st.style.color=aptColor(nuevoEst);
+              st.textContent=aptLabel(nuevoEst);
+            } else {
+              sel.value=est; // revert on error
+            }
           });
           card.appendChild(sel);
         }
@@ -1702,8 +1709,15 @@ async function loadEstacionamiento(){
         sel.appendChild(o);
       });
       sel.addEventListener('change',async()=>{
-        await sb.from('ventas_estacionamiento').upsert({numero:num,estado:sel.value},{onConflict:'numero'});
-        loadEstacionamiento();
+        const nuevoEst=sel.value;
+        const {error}=await sb.from('ventas_estacionamiento').upsert({numero:num,estado:nuevoEst},{onConflict:'numero'});
+        if(!error){
+          card.style.background=estBg(nuevoEst);
+          st.style.color=estColor(nuevoEst);
+          st.textContent=nuevoEst==='reservado'?'RESERVADO':'DISPONIBLE';
+        } else {
+          sel.value=est; // revert on error
+        }
       });
       card.appendChild(sel);
     }
