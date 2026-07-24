@@ -196,7 +196,7 @@ textarea{resize:vertical;min-height:70px}
       </div>
     </div>
     <button class="lbtn" onclick="doLogin()">Ingresar</button>
-    <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--tx3);opacity:0.6">v1.16</div>
+    <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--tx3);opacity:0.6">v1.17</div>
   </div>
 </div>
 
@@ -615,6 +615,27 @@ textarea{resize:vertical;min-height:70px}
       </div>
     </div>
 
+    <!-- APARTAMENTOS -->
+    <div class="section" id="sec-apartamentos">
+      <div class="sh"><h2>Apartamentos</h2><div id="apt-resumen" class="wpill"></div></div>
+      <div id="apt-edificio1" class="card" style="margin-bottom:14px">
+        <div class="ctitle">Edificio 1</div>
+        <div id="apt-e1-body"></div>
+      </div>
+      <div id="apt-edificio2" class="card">
+        <div class="ctitle">Edificio 2</div>
+        <div id="apt-e2-body"></div>
+      </div>
+    </div>
+
+    <!-- ESTACIONAMIENTO -->
+    <div class="section" id="sec-estacionamiento">
+      <div class="sh"><h2>Estacionamiento</h2><div id="est-resumen" class="wpill"></div></div>
+      <div class="card">
+        <div id="est-grid"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -676,6 +697,8 @@ const NAVS=[
   {id:'tecnico',label:'Técnico',roles:['admin','residente']},
   {id:'avance',label:'Avance',roles:['admin','propietario']},
   {id:'proyecto',label:'Proyecto',roles:['admin','propietario']},
+  {id:'apartamentos',label:'Apartamentos',roles:['admin','ventas']},
+  {id:'estacionamiento',label:'Estacionamiento',roles:['admin','ventas']},
 ];
 function buildNav(){
   const nav=document.getElementById('anav');nav.innerHTML='';
@@ -693,6 +716,8 @@ function buildNav(){
       if(n.id==='fotos')loadFotos('todos');
       if(n.id==='avance')loadAvance('todos');
       if(n.id==='proyecto')loadProyecto();
+      if(n.id==='apartamentos')loadApartamentos();
+      if(n.id==='estacionamiento')loadEstacionamiento();
     };nav.appendChild(b);
   });
 }
@@ -1552,7 +1577,141 @@ async function delProyNov(id){
   loadProyecto();
 }
 
-// ─── ACCORDION ────────────────────────
+
+// ─── APARTAMENTOS ─────────────────────
+const APT_DATA=[
+  // Edificio 1
+  {ed:1,piso:'PB',apto:'A'},{ed:1,piso:'PB',apto:'B'},{ed:1,piso:'PB',apto:'C'},{ed:1,piso:'PB',apto:'D'},
+  {ed:1,piso:'P1',apto:'A'},{ed:1,piso:'P1',apto:'B'},{ed:1,piso:'P1',apto:'C'},{ed:1,piso:'P1',apto:'D'},
+  {ed:1,piso:'P2',apto:'A'},{ed:1,piso:'P2',apto:'B'},{ed:1,piso:'P2',apto:'C'},{ed:1,piso:'P2',apto:'D'},
+  {ed:1,piso:'P3',apto:'A'},{ed:1,piso:'P3',apto:'B'},{ed:1,piso:'P3',apto:'C'},{ed:1,piso:'P3',apto:'D'},
+  // Edificio 2
+  {ed:2,piso:'PB',apto:'A'},{ed:2,piso:'PB',apto:'B'},{ed:2,piso:'PB',apto:'C'},{ed:2,piso:'PB',apto:'D'},
+  {ed:2,piso:'P1',apto:'A'},{ed:2,piso:'P1',apto:'B'},{ed:2,piso:'P1',apto:'C'},{ed:2,piso:'P1',apto:'D'},
+  {ed:2,piso:'P2',apto:'A'},{ed:2,piso:'P2',apto:'B'},{ed:2,piso:'P2',apto:'C'},{ed:2,piso:'P2',apto:'D'},
+  {ed:2,piso:'P3',apto:'A'},{ed:2,piso:'P3',apto:'B'},{ed:2,piso:'P3',apto:'C'},{ed:2,piso:'P3',apto:'D'},
+];
+const EST_NUMS=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27];
+
+// estado colors
+function aptColor(e){return e==='vendido'?'var(--r600)':e==='reservado'?'var(--a600)':'var(--g800)'}
+function aptBg(e){return e==='vendido'?'var(--r50)':e==='reservado'?'var(--a50)':'var(--g50)'}
+function aptLabel(e){return e==='vendido'?'VENDIDO':e==='reservado'?'RESERVADO':'DISPONIBLE'}
+
+async function loadApartamentos(){
+  const {data}=await sb.from('ventas_apartamentos').select('*');
+  const map={};(data||[]).forEach(r=>{map[r.codigo]=r.estado});
+
+  const pisos=['PB','P1','P2','P3'];
+  [1,2].forEach(ed=>{
+    const container=document.getElementById('apt-e'+ed+'-body');
+    container.innerHTML='';
+    pisos.forEach(piso=>{
+      const hdr=document.createElement('div');
+      hdr.style.cssText='font-size:11px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;padding:8px 0 4px;border-bottom:0.5px solid var(--bdr);margin-bottom:8px';
+      hdr.textContent='Planta '+piso.replace('P','').replace('B','Baja').replace('1','1').replace('2','2').replace('3','3');
+      if(piso==='PB') hdr.textContent='Planta Baja';
+      else hdr.textContent='Planta '+piso.replace('P','');
+      container.appendChild(hdr);
+
+      const grid=document.createElement('div');
+      grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px';
+      ['A','B','C','D'].forEach(letra=>{
+        const cod='E'+ed+'-'+piso+'-'+letra;
+        const est=map[cod]||'disponible';
+        const card=document.createElement('div');
+        card.style.cssText=`display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:3px;background:${aptBg(est)};border:0.5px solid var(--bdr)`;
+
+        const info=document.createElement('div');
+        const nm=document.createElement('div');
+        nm.style.cssText='font-size:13px;font-weight:700;color:var(--tx)';
+        nm.textContent='Apto '+letra;
+        const st=document.createElement('div');
+        st.style.cssText=`font-size:10px;font-weight:700;color:${aptColor(est)};letter-spacing:0.5px;margin-top:2px`;
+        st.textContent=aptLabel(est);
+        info.appendChild(nm);info.appendChild(st);
+        card.appendChild(info);
+
+        if(CU.rol==='admin'){
+          const sel=document.createElement('select');
+          sel.style.cssText='font-family:var(--font);font-size:11px;padding:3px 6px;border-radius:2px;border:0.5px solid var(--bdr2);background:var(--bg3);color:var(--tx);width:100px';
+          ['disponible','reservado','vendido'].forEach(v=>{
+            const o=document.createElement('option');
+            o.value=v;o.textContent=aptLabel(v);
+            if(v===est)o.selected=true;
+            sel.appendChild(o);
+          });
+          sel.addEventListener('change',async()=>{
+            await sb.from('ventas_apartamentos').upsert({codigo:cod,estado:sel.value},{onConflict:'codigo'});
+            loadApartamentos();
+          });
+          card.appendChild(sel);
+        }
+        grid.appendChild(card);
+      });
+      container.appendChild(grid);
+    });
+  });
+
+  // resumen
+  const total=APT_DATA.length;
+  const vend=(data||[]).filter(r=>r.estado==='vendido').length;
+  const res=(data||[]).filter(r=>r.estado==='reservado').length;
+  const disp=total-vend-res;
+  document.getElementById('apt-resumen').textContent=`${disp} disp · ${res} res · ${vend} vend`;
+}
+
+// ─── ESTACIONAMIENTO ──────────────────
+function estColor(e){return e==='reservado'?'var(--a600)':'var(--g800)'}
+function estBg(e){return e==='reservado'?'var(--a50)':'var(--g50)'}
+
+async function loadEstacionamiento(){
+  const {data}=await sb.from('ventas_estacionamiento').select('*');
+  const map={};(data||[]).forEach(r=>{map[r.numero]=r.estado});
+
+  const grid=document.getElementById('est-grid');
+  grid.innerHTML='';
+  const wrap=document.createElement('div');
+  wrap.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:8px';
+
+  let disp=0,res=0;
+  EST_NUMS.forEach(num=>{
+    const est=map[num]||'disponible';
+    if(est==='disponible')disp++;else res++;
+
+    const card=document.createElement('div');
+    card.style.cssText=`display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:3px;background:${estBg(est)};border:0.5px solid var(--bdr)`;
+
+    const info=document.createElement('div');
+    const nm=document.createElement('div');
+    nm.style.cssText='font-size:13px;font-weight:700;color:var(--tx)';
+    nm.textContent='Puesto #'+num;
+    const st=document.createElement('div');
+    st.style.cssText=`font-size:10px;font-weight:700;color:${estColor(est)};letter-spacing:0.5px;margin-top:2px`;
+    st.textContent=est==='reservado'?'RESERVADO':'DISPONIBLE';
+    info.appendChild(nm);info.appendChild(st);
+    card.appendChild(info);
+
+    if(CU.rol==='admin'){
+      const sel=document.createElement('select');
+      sel.style.cssText='font-family:var(--font);font-size:11px;padding:3px 6px;border-radius:2px;border:0.5px solid var(--bdr2);background:var(--bg3);color:var(--tx);width:110px';
+      ['disponible','reservado'].forEach(v=>{
+        const o=document.createElement('option');
+        o.value=v;o.textContent=v==='disponible'?'DISPONIBLE':'RESERVADO';
+        if(v===est)o.selected=true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener('change',async()=>{
+        await sb.from('ventas_estacionamiento').upsert({numero:num,estado:sel.value},{onConflict:'numero'});
+        loadEstacionamiento();
+      });
+      card.appendChild(sel);
+    }
+    wrap.appendChild(card);
+  });
+  grid.appendChild(wrap);
+  document.getElementById('est-resumen').textContent=`${disp} disponibles · ${res} reservados`;
+}
 function toggleAcc(id){const b=document.getElementById(id);const a=document.getElementById('a'+id);const o=b.classList.toggle('open');if(a)a.textContent=o?'▲':'▼'}
 </script>
 </body>
