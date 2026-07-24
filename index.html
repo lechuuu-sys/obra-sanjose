@@ -1604,13 +1604,16 @@ const APT_DATA=[
 const EST_NUMS=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27];
 
 // estado colors
+function aptColor(e){return e==='vendido'?'var(--r600)':e==='reservado'?'var(--a600)':'var(--g800)'}
+function aptBg(e){return e==='vendido'?'var(--r50)':e==='reservado'?'var(--a50)':'var(--g50)'}
+function aptLabel(e){return e==='vendido'?'VENDIDO':e==='reservado'?'RESERVADO':'DISPONIBLE'}
+function estColor(e){return e==='reservado'?'var(--a600)':'var(--g800)'}
+function estBg(e){return e==='reservado'?'var(--a50)':'var(--g50)'}
 function actualizarResumenApt(){
   const sels=document.querySelectorAll('#apt-edificio1 select,#apt-edificio2 select');
   let disp=0,res=0,vend=0;
   sels.forEach(s=>{if(s.value==='disponible')disp++;else if(s.value==='reservado')res++;else vend++;});
-  // also count apts without selector (shouldn't happen but safety)
-  const total=APT_DATA.length;
-  const sinSel=total-sels.length;
+  const sinSel=APT_DATA.length-sels.length;
   disp+=sinSel;
   document.getElementById('apt-resumen').textContent=`${disp} disp · ${res} res · ${vend} vend`;
 }
@@ -1620,8 +1623,6 @@ function actualizarResumenEst(){
   sels.forEach(s=>{if(s.value==='reservado')res++;else disp++;});
   document.getElementById('est-resumen').textContent=`${disp} disponibles · ${res} reservados`;
 }
-function aptBg(e){return e==='vendido'?'var(--r50)':e==='reservado'?'var(--a50)':'var(--g50)'}
-function aptLabel(e){return e==='vendido'?'VENDIDO':e==='reservado'?'RESERVADO':'DISPONIBLE'}
 
 async function loadApartamentos(){
   const {data}=await sb.from('ventas_apartamentos').select('*');
@@ -1702,9 +1703,6 @@ async function loadApartamentos(){
 }
 
 // ─── ESTACIONAMIENTO ──────────────────
-function estColor(e){return e==='reservado'?'var(--a600)':'var(--g800)'}
-function estBg(e){return e==='reservado'?'var(--a50)':'var(--g50)'}
-
 async function loadEstacionamiento(){
   const {data}=await sb.from('ventas_estacionamiento').select('*');
   const map={};(data||[]).forEach(r=>{map[r.numero]=r.estado});
