@@ -120,12 +120,37 @@ textarea{resize:vertical;min-height:70px}
 .to.sel{background:var(--gold-dim);color:var(--gold);border-color:var(--bdr2)}
 
 /* ── GANTT ── */
-.gc{overflow-x:auto}
-.gt{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
-.gt th{background:var(--bg4);color:var(--gold);padding:6px 8px;text-align:center;font-weight:600;font-size:10px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--bdr2)}
-.gt td{padding:5px 8px;border-bottom:0.5px solid var(--bdr);color:var(--tx2)}
-.gt tr:hover td{background:var(--bg3)}
-.gbar{height:14px;border-radius:2px;min-width:8px}
+.gtoolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.gmodes{display:flex;border:0.5px solid var(--bdr2);border-radius:2px;overflow:hidden}
+.gmode{padding:5px 12px;font-size:10px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;background:var(--bg2);color:var(--tx3);border:none;cursor:pointer;font-family:var(--font);transition:all .15s}
+.gmode.on{background:var(--gold-dim);color:var(--gold)}
+.glegend{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.gleg{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--tx3);letter-spacing:0.5px}
+.gleg i{width:12px;height:8px;border-radius:2px;display:block}
+.gwrap{position:relative;overflow:auto;max-height:66vh;border:0.5px solid var(--bdr);border-radius:4px;background:var(--bg2)}
+.gtbl{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-family:var(--font)}
+.gtbl th,.gtbl td{padding:0;margin:0}
+.gnm{position:sticky;left:0;z-index:3;background:var(--bg3);width:180px;min-width:180px;max-width:180px;
+  padding:7px 10px;text-align:left;vertical-align:middle;
+  border-right:1px solid var(--bdr2);border-bottom:0.5px solid var(--bdr)}
+th.gnm{z-index:5;background:var(--bg4)}
+.ghd{position:sticky;top:0;z-index:4;background:var(--bg4)}
+.ghd th{background:var(--bg4)}
+.gmes{text-align:center;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold);
+  padding:6px 4px;border-bottom:0.5px solid var(--bdr);border-left:0.5px solid var(--bdr2);white-space:nowrap}
+.gper{width:30px;min-width:30px;text-align:center;font-size:9px;font-weight:600;color:var(--tx3);
+  padding:6px 0;border-bottom:1px solid var(--bdr2)}
+.gper.wide{width:64px;min-width:64px;font-size:10px}
+.gper.now{color:var(--gold);background:var(--gold-dim)}
+.grw td{height:32px;border-bottom:0.5px solid var(--bdr)}
+.grw:hover .gnm{background:var(--bg4)}
+.gcl.now{background:rgba(201,168,76,0.07)}
+.gbar{height:17px;border-radius:2px;display:flex;align-items:center;padding:0 7px;font-size:9px;
+  font-weight:700;letter-spacing:0.3px;color:rgba(255,255,255,0.92);white-space:nowrap;overflow:hidden;
+  box-shadow:0 1px 4px rgba(0,0,0,0.45)}
+.gnt{font-size:11px;font-weight:600;color:var(--tx);line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gns{font-size:9px;color:var(--tx3);margin-top:3px;letter-spacing:0.5px}
 
 /* ── TECH TABLES ── */
 .tt{width:100%;border-collapse:collapse;font-size:13px}
@@ -211,7 +236,7 @@ textarea{resize:vertical;min-height:70px}
       </div>
     </div>
     <button class="lbtn" onclick="doLogin()">Ingresar</button>
-    <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--tx3);opacity:0.6">v1.23</div>
+    <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--tx3);opacity:0.6">v1.24</div>
   </div>
 </div>
 
@@ -1228,22 +1253,99 @@ async function saveAct(){
   document.getElementById('an').value='';document.getElementById('ar').value='';
   loadActs();
 }
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+let ACTS=[],ganttMode='sem';
 async function loadActs(){
-  const {data}=await sb.from('actividades').select('*').order('sem_ini');
-  renderGantt(data||[]);renderActList(data||[]);
+  const {data}=await sb.from('actividades').select('*').order('sem_ini').limit(1000);
+  ACTS=data||[];
+  renderGantt(ACTS);renderActList(ACTS);
 }
+function setGanttMode(m){ganttMode=m;renderGantt(ACTS)}
+const GEC={'en-curso':'#3a7ec4','completada':'#4a8a2a','retrasada':'#b84242','pendiente':'#5a6472'};
+
 function renderGantt(acts){
-  const el=document.getElementById('gantt');if(!acts.length){el.innerHTML='<div class="empty"><div class="eicon">📅</div>Añade actividades</div>';return}
-  const ms=Math.max(...acts.map(a=>a.sem_fin),8);const vs=Math.min(ms,20);
-  const ec={'en-curso':'#378ADD','completada':'#3B6D11','retrasada':'#E24B4A','pendiente':'#888780'};
-  let h='<div class="gc"><table class="gt"><thead><tr><th style="min-width:110px;text-align:left;padding-left:8px">Actividad</th>';
-  for(let i=1;i<=vs;i++)h+=`<th>S${i}</th>`;h+='</tr></thead><tbody>';
+  const el=document.getElementById('gantt');
+  if(!acts.length){el.innerHTML='<div class="empty"><div class="eicon">📅</div>Añade actividades para ver el Gantt</div>';return}
+  const semActual=getProyWeek();
+  // Sin tope: abarca hasta la última semana planificada (o la actual si es posterior)
+  const maxSem=Math.max(...acts.map(a=>a.sem_fin||1),semActual,8);
+
+  // Barra de herramientas
+  let h='<div class="gtoolbar">';
+  h+='<div class="gmodes">'+
+     `<button class="gmode${ganttMode==='sem'?' on':''}" onclick="setGanttMode('sem')">Semanas</button>`+
+     `<button class="gmode${ganttMode==='mes'?' on':''}" onclick="setGanttMode('mes')">Meses</button>`+
+     '</div>';
+  h+='<div class="glegend">';
+  [['pendiente','Pendiente'],['en-curso','En curso'],['completada','Completada'],['retrasada','Retrasada']]
+    .forEach(([k,lbl])=>{h+=`<span class="gleg"><i style="background:${GEC[k]}"></i>${lbl}</span>`});
+  h+=`<span class="gleg" style="color:var(--gold)">Semana ${semActual} · ${maxSem} sem. totales</span>`;
+  h+='</div></div>';
+
+  h+= ganttMode==='sem' ? ganttSemanas(acts,maxSem,semActual) : ganttMeses(acts,maxSem,semActual);
+  el.innerHTML=h;
+}
+
+function ganttSemanas(acts,maxSem,semActual){
+  // Agrupa semanas por mes para la banda superior
+  const bandas=[];
+  for(let w=1;w<=maxSem;w++){
+    const k=semanaMesKey(w);
+    if(bandas.length&&bandas[bandas.length-1].k===k)bandas[bandas.length-1].n++;
+    else bandas.push({k,n:1});
+  }
+  let h='<div class="gwrap"><table class="gtbl">';
+  h+='<thead class="ghd"><tr><th class="gnm" rowspan="2" style="vertical-align:bottom;padding-bottom:8px">'+
+     '<span style="font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold)">Actividad</span></th>';
+  bandas.forEach(b=>{h+=`<th class="gmes" colspan="${b.n}">${mesLabel(b.k)}</th>`});
+  h+='</tr><tr>';
+  for(let w=1;w<=maxSem;w++)h+=`<th class="gper${w===semActual?' now':''}">${w}</th>`;
+  h+='</tr></thead><tbody>';
+
   acts.forEach(a=>{
-    h+=`<tr><td style="font-size:11px;font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.nombre}">${a.nombre}</td>`;
-    for(let w=1;w<=vs;w++)h+=w>=a.sem_ini&&w<=a.sem_fin?`<td style="padding:3px 2px"><div class="gbar" style="background:${ec[a.estado]||'#888780'}"></div></td>`:'<td></td>';
+    const ini=Math.max(1,a.sem_ini||1), fin=Math.min(maxSem,Math.max(ini,a.sem_fin||ini));
+    const dur=fin-ini+1;
+    h+='<tr class="grw">';
+    h+=`<td class="gnm"><div class="gnt" title="${esc(a.nombre)}">${esc(a.nombre)}</div>`+
+       `<div class="gns">S${a.sem_ini}–S${a.sem_fin}${a.responsable?' · '+esc(a.responsable):''}</div></td>`;
+    for(let w=1;w<ini;w++)h+=`<td class="gcl${w===semActual?' now':''}"></td>`;
+    h+=`<td colspan="${dur}" style="padding:3px 2px">`+
+       `<div class="gbar" style="background:${GEC[a.estado]||GEC.pendiente}">${dur>=3?'S'+a.sem_ini+'–S'+a.sem_fin:''}</div></td>`;
+    for(let w=fin+1;w<=maxSem;w++)h+=`<td class="gcl${w===semActual?' now':''}"></td>`;
     h+='</tr>';
   });
-  h+='</tbody></table></div>';el.innerHTML=h;
+  return h+'</tbody></table></div>';
+}
+
+function ganttMeses(acts,maxSem,semActual){
+  // Lista ordenada de meses cubiertos y a qué índice pertenece cada semana
+  const meses=[],idxDeSem={};
+  for(let w=1;w<=maxSem;w++){
+    const k=semanaMesKey(w);
+    let i=meses.indexOf(k);
+    if(i===-1){meses.push(k);i=meses.length-1}
+    idxDeSem[w]=i;
+  }
+  const mesActual=idxDeSem[semActual];
+  let h='<div class="gwrap"><table class="gtbl">';
+  h+='<thead class="ghd"><tr><th class="gnm">'+
+     '<span style="font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold)">Actividad</span></th>';
+  meses.forEach((k,i)=>{h+=`<th class="gper wide${i===mesActual?' now':''}">${mesLabel(k).replace(' de ',' ')}</th>`});
+  h+='</tr></thead><tbody>';
+
+  acts.forEach(a=>{
+    const ini=Math.max(1,a.sem_ini||1), fin=Math.min(maxSem,Math.max(ini,a.sem_fin||ini));
+    const c0=idxDeSem[ini], c1=idxDeSem[fin], span=c1-c0+1;
+    h+='<tr class="grw">';
+    h+=`<td class="gnm"><div class="gnt" title="${esc(a.nombre)}">${esc(a.nombre)}</div>`+
+       `<div class="gns">S${a.sem_ini}–S${a.sem_fin}${a.responsable?' · '+esc(a.responsable):''}</div></td>`;
+    for(let i=0;i<c0;i++)h+=`<td class="gcl${i===mesActual?' now':''}"></td>`;
+    h+=`<td colspan="${span}" style="padding:3px 3px">`+
+       `<div class="gbar" style="background:${GEC[a.estado]||GEC.pendiente}">${span>=2?'S'+a.sem_ini+'–S'+a.sem_fin:''}</div></td>`;
+    for(let i=c1+1;i<meses.length;i++)h+=`<td class="gcl${i===mesActual?' now':''}"></td>`;
+    h+='</tr>';
+  });
+  return h+'</tbody></table></div>';
 }
 function renderActList(acts){
   const el=document.getElementById('alst');if(!acts.length){el.innerHTML='<div class="empty"><div class="eicon">📋</div>Sin actividades</div>';return}
