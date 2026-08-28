@@ -9,6 +9,7 @@
 <style>
 /* ── ALTUS INGENIERÍA — Design System ── */
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Geist+Mono:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,75..125,300..700;1,75..125,300..600&family=JetBrains+Mono:wght@300;400;500&display=swap');
 :root {
   /* Gold palette */
   --gold:#c9a84c;--gold2:#b8973a;--gold3:#e8d49a;--gold-dim:rgba(201,168,76,0.15);--gold-dim2:rgba(201,168,76,0.28);
@@ -26,6 +27,13 @@
   --b50:#0d1520;--b100:#1a2535;--b200:#2a3f5a;--b400:#4a7aaa;--b600:#3a6a9a;--b800:#2a5080;--b900:#1a3560;
   /* Typography */
   --font:'Geist Mono','SF Mono',monospace;
+  /* Marca Altus (altusingenieria.com) */
+  --alt-sans:'Archivo',system-ui,sans-serif;
+  --alt-mono:'JetBrains Mono',monospace;
+  --alt-gold:#C4933F;--alt-gold-lt:#E8C87A;
+  --alt-paper:#E8EEF4;--alt-graphite:#8FA3B8;--alt-graphite-dim:#5C7186;
+  --alt-ink:#0A1626;--alt-ink-deep:#060E19;--alt-ink-raise:#0E1D30;
+  --alt-rule:rgba(140,190,230,.22);
   --font-serif:'Cormorant Garamond',Georgia,serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -33,22 +41,122 @@ body{font-family:var(--font);background:var(--bg);color:var(--tx);font-size:14px
 
 /* ── LOGIN ── */
 #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(ellipse at 30% 20%,rgba(201,168,76,0.06) 0%,transparent 60%),
-             radial-gradient(ellipse at 80% 80%,rgba(201,168,76,0.04) 0%,transparent 50%),
-             var(--bg);padding:20px}
-.lcard{background:var(--bg2);border:1px solid var(--bdr2);border-radius:4px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 32px 80px rgba(0,0,0,0.6)}
-.llogo{width:52px;height:52px;border:1px solid var(--gold2);display:flex;align-items:center;justify-content:center;color:var(--gold);font-family:var(--font-serif);font-style:italic;font-size:22px;margin:0 auto 20px;letter-spacing:1px}
+  position:relative;overflow:hidden;font-family:var(--alt-sans);
+  background:radial-gradient(ellipse at 28% 18%,rgba(196,147,63,0.07) 0%,transparent 58%),
+             radial-gradient(ellipse at 82% 84%,rgba(140,190,230,0.05) 0%,transparent 52%),
+             var(--alt-ink-deep);padding:20px}
+
+/* Retícula de plano */
+#login-screen::before{content:'';position:absolute;inset:-60px;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(140,190,230,0.055) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(140,190,230,0.055) 1px,transparent 1px),
+                   linear-gradient(rgba(140,190,230,0.10) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(140,190,230,0.10) 1px,transparent 1px);
+  background-size:22px 22px,22px 22px,110px 110px,110px 110px;
+  mask-image:radial-gradient(ellipse 75% 65% at 50% 45%,#000 35%,transparent 78%);
+  -webkit-mask-image:radial-gradient(ellipse 75% 65% at 50% 45%,#000 35%,transparent 78%);
+  animation:gridIn 2.4s ease forwards;opacity:0}
+@keyframes gridIn{to{opacity:1}}
+
+/* Alzado técnico dibujándose */
+.bp-art{position:absolute;z-index:0;width:min(1180px,132vw);max-height:96vh;
+  left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;opacity:0.85}
+.bp-art .ln{fill:none;stroke:var(--alt-gold);stroke-width:1.15;stroke-linecap:round;stroke-linejoin:round;
+  opacity:0.5;stroke-dasharray:1;stroke-dashoffset:1;animation:bpDraw 1.9s cubic-bezier(.6,.05,.3,1) forwards;animation-delay:var(--d,0s)}
+.bp-art .ln.thin{stroke-width:.7;opacity:0.3}
+.bp-art .ln.dash{stroke-width:.7;opacity:0.34;stroke-dasharray:1;animation:bpDrawDash 1.6s ease forwards;animation-delay:var(--d,0s)}
+.bp-art .fillw{fill:rgba(196,147,63,0.05);stroke:none;opacity:0;animation:bpFade 1.1s ease forwards;animation-delay:var(--d,0s)}
+.bp-art .tx{fill:var(--alt-gold);font-family:var(--alt-mono);font-size:11px;letter-spacing:.18em;font-weight:400;
+  opacity:0;animation:bpFade 1s ease forwards;animation-delay:var(--d,0s)}
+.bp-art .tx.sm{font-size:9px;fill:var(--alt-graphite-dim);letter-spacing:.34em}
+@keyframes bpDraw{to{stroke-dashoffset:0}}
+@keyframes bpDrawDash{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes bpFade{to{opacity:.62}}
+
+/* Tarjeta */
+.lcard{position:relative;z-index:2;
+  background:linear-gradient(180deg,rgba(14,29,48,0.975),rgba(6,14,25,0.975));
+  border:1px solid var(--alt-rule);border-radius:3px;padding:40px 36px;width:100%;max-width:380px;
+  box-shadow:0 32px 90px rgba(0,0,0,0.74),0 0 0 1px rgba(196,147,63,0.06);
+  backdrop-filter:blur(3px);
+  opacity:0;transform:translateY(16px);animation:cardIn .85s cubic-bezier(.2,.7,.3,1) .35s forwards}
+@keyframes cardIn{to{opacity:1;transform:translateY(0)}}
+.lcard>*{opacity:0;animation:riseIn .55s ease forwards}
+.lcard>*:nth-child(1){animation-delay:.62s}
+.lcard>*:nth-child(2){animation-delay:.70s}
+.lcard>*:nth-child(3){animation-delay:.74s}
+.lcard>*:nth-child(4){animation-delay:.80s}
+.lcard>*:nth-child(5){animation-delay:.88s}
+.lcard>*:nth-child(6){animation-delay:.96s}
+.lcard>*:nth-child(7){animation-delay:1.04s}
+.lcard>*:nth-child(8){animation-delay:1.12s}
+@keyframes riseIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+#lerr{animation:none;opacity:1}
+#login-screen .lfield label{font-family:var(--alt-mono);font-size:8.5px;font-weight:400;
+  letter-spacing:.34em;color:var(--alt-graphite-dim);text-transform:uppercase;margin-bottom:8px}
+#login-screen .lfield input{font-family:var(--alt-sans);font-size:14px;color:var(--alt-paper);
+  background:rgba(6,14,25,.55);border:1px solid var(--alt-rule);border-radius:2px;font-variation-settings:'wdth' 100}
+#login-screen .lfield input::placeholder{color:var(--alt-graphite-dim);opacity:.55}
+#login-screen .lfield input:focus{border-color:var(--alt-gold);box-shadow:0 0 0 3px rgba(196,147,63,.1)}
+#login-screen .lbtn{font-family:var(--alt-sans);font-size:12px;font-weight:600;letter-spacing:.2em;
+  text-transform:uppercase;background:var(--alt-gold);color:var(--alt-ink-deep);border-radius:2px;
+  font-variation-settings:'wdth' 112}
+#login-screen .lbtn:hover{background:var(--alt-gold-lt)}
+/* Marca Altus — lockup idéntico al del sitio */
+.lbrand{display:flex;align-items:center;justify-content:center;gap:13px;margin-bottom:26px}
+.lbrand svg{width:30px;height:26px;stroke:var(--alt-gold);stroke-width:5;fill:none;overflow:visible}
+.lbrand svg polygon{stroke-dasharray:1;stroke-dashoffset:1;
+  animation:bpDraw 1.15s cubic-bezier(.6,.05,.3,1) forwards}
+.lbrand svg polygon:nth-child(1){animation-delay:.5s}
+.lbrand svg polygon:nth-child(2){animation-delay:.72s}
+.lbrand-txt{font-family:var(--alt-sans);font-size:15px;font-weight:600;letter-spacing:.36em;
+  color:var(--alt-paper);text-transform:uppercase;line-height:1;font-variation-settings:'wdth' 112}
+.lbrand-sub{display:block;font-family:var(--alt-mono);font-size:8px;letter-spacing:.42em;
+  color:var(--alt-graphite-dim);margin-top:3px}
+.lcard>.lsep{opacity:.5}
+.lsep{width:34px;height:1px;background:var(--alt-gold);margin:0 auto 22px;
+  transform:scaleX(0);transform-origin:center;animation:sepIn .7s cubic-bezier(.2,.7,.3,1) 1s forwards}
+@keyframes sepIn{to{transform:scaleX(1)}}
+#login-screen .ltitle h1{font-family:var(--alt-sans);font-size:19px;font-weight:300;
+  letter-spacing:.01em;color:var(--alt-paper);font-variation-settings:'wdth' 100}
+#login-screen .ltitle h1 em{font-style:italic;font-weight:400;color:var(--alt-gold-lt)}
+#login-screen .ltitle p{font-family:var(--alt-mono);font-size:8.5px;letter-spacing:.34em;
+  color:var(--alt-graphite-dim);margin-top:9px;text-transform:uppercase}
+#login-screen .lver{font-family:var(--alt-mono);letter-spacing:.28em;color:var(--alt-graphite-dim)}
+
+.llogo{width:52px;height:52px;border:1px solid var(--gold2);display:flex;align-items:center;justify-content:center;
+  color:var(--gold);font-family:var(--font-serif);font-style:italic;font-size:22px;margin:0 auto 20px;
+  letter-spacing:1px;position:relative}
+.llogo::after{content:'';position:absolute;inset:-5px;border:1px solid var(--gold2);opacity:0;
+  animation:logoRing 1.5s ease .95s forwards}
+@keyframes logoRing{40%{opacity:.32;transform:scale(1)}to{opacity:.12;transform:scale(1.04)}}
 .ltitle{text-align:center;margin-bottom:28px}
 .ltitle h1{font-family:var(--font-serif);font-size:22px;font-weight:600;color:var(--tx);letter-spacing:0.5px}
 .ltitle p{font-size:11px;color:var(--tx3);margin-top:6px;letter-spacing:1.5px;text-transform:uppercase}
 .lfield{margin-bottom:14px}
 .lfield label{display:block;font-size:11px;color:var(--tx3);font-weight:600;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase}
-.lfield input{width:100%;padding:10px 12px;border-radius:2px;border:1px solid var(--bdr2);background:var(--bg3);font-family:var(--font);font-size:13px;color:var(--tx);outline:none;transition:border-color 0.2s}
-.lfield input:focus{border-color:var(--gold)}
-.lbtn{width:100%;padding:12px;border-radius:2px;background:var(--gold2);color:#0a0f1a;border:none;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;margin-top:6px;letter-spacing:0.5px;transition:background 0.2s}
+.lfield input{width:100%;padding:10px 12px;border-radius:2px;border:1px solid var(--bdr2);background:var(--bg3);
+  font-family:var(--font);font-size:13px;color:var(--tx);outline:none;transition:border-color .2s,box-shadow .2s}
+.lfield input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.09)}
+.lbtn{width:100%;padding:12px;border-radius:2px;background:var(--gold2);color:#0a0f1a;border:none;
+  font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;margin-top:6px;letter-spacing:0.5px;
+  position:relative;overflow:hidden;transition:background .2s,transform .12s}
 .lbtn:hover{background:var(--gold)}
-.lerr{background:var(--r50);color:var(--r800);border:0.5px solid rgba(192,64,64,0.3);border-radius:2px;padding:10px 12px;font-size:12px;margin-bottom:12px;text-align:center;display:none}
-.lhint{margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr);font-size:10px;color:var(--tx4);text-align:center;line-height:2;letter-spacing:0.5px}
+.lbtn:active{transform:translateY(1px)}
+.lbtn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.32),transparent);transform:skewX(-20deg)}
+.lbtn:hover::after{animation:sheen .75s ease}
+@keyframes sheen{to{left:120%}}
+.lerr{background:var(--r50);color:var(--r800);border:0.5px solid rgba(192,64,64,0.3);border-radius:2px;
+  padding:10px 12px;font-size:12px;margin-bottom:12px;text-align:center;display:none}
+.lhint{margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr);font-size:10px;color:var(--tx4);
+  text-align:center;line-height:2;letter-spacing:0.5px}
+@media(prefers-reduced-motion:reduce){
+  .bp-art .ln,.bp-art .ln.dash{stroke-dashoffset:0;animation:none}
+  .bp-art .tx,.bp-art .fillw{opacity:.6;animation:none}
+  .lcard,.lcard>*,#login-screen::before{opacity:1;transform:none;animation:none}
+}
+@media(max-width:560px){.bp-art{opacity:0.42}}
 
 /* ── APP SHELL ── */
 #app-screen{display:none}
@@ -223,9 +331,54 @@ th.gnm{z-index:5;background:var(--bg4)}
 <body>
 
 <div id="login-screen">
+
+  <svg class="bp-art" viewBox="40 150 990 470" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <!-- Terreno -->
+    <path class="ln" pathLength="1" style="--d:.05s" d="M60 530 H1120"/>
+    <path class="ln thin" pathLength="1" style="--d:.15s" d="M60 536 H1120"/>
+
+    <!-- EDIFICIO 1 -->
+    <path class="fillw" style="--d:1.5s" d="M232 190 H508 V530 H232 Z"/>
+    <path class="ln" pathLength="1" style="--d:.25s" d="M232 530 V190 H508 V530"/>
+    <path class="ln thin" pathLength="1" style="--d:.55s" d="M232 445 H508 M232 360 H508 M232 275 H508"/>
+    <path class="ln thin" pathLength="1" style="--d:.75s" d="M264 470 h44 v-40 h-44 Z M344 470 h44 v-40 h-44 Z M424 470 h44 v-40 h-44 Z"/>
+    <path class="ln thin" pathLength="1" style="--d:.85s" d="M264 385 h44 v-40 h-44 Z M344 385 h44 v-40 h-44 Z M424 385 h44 v-40 h-44 Z"/>
+    <path class="ln thin" pathLength="1" style="--d:.95s" d="M264 300 h44 v-40 h-44 Z M344 300 h44 v-40 h-44 Z M424 300 h44 v-40 h-44 Z"/>
+    <path class="ln thin" pathLength="1" style="--d:1.05s" d="M264 215 h44 v-40 h-44 Z M344 215 h44 v-40 h-44 Z M424 215 h44 v-40 h-44 Z"/>
+    <path class="ln" pathLength="1" style="--d:1.15s" d="M222 190 H518"/>
+
+    <!-- EDIFICIO 2 -->
+    <path class="fillw" style="--d:1.7s" d="M672 190 H948 V530 H672 Z"/>
+    <path class="ln" pathLength="1" style="--d:.45s" d="M672 530 V190 H948 V530"/>
+    <path class="ln thin" pathLength="1" style="--d:.7s" d="M672 445 H948 M672 360 H948 M672 275 H948"/>
+    <path class="ln thin" pathLength="1" style="--d:.9s" d="M704 470 h44 v-40 h-44 Z M784 470 h44 v-40 h-44 Z M864 470 h44 v-40 h-44 Z"/>
+    <path class="ln thin" pathLength="1" style="--d:1s" d="M704 385 h44 v-40 h-44 Z M784 385 h44 v-40 h-44 Z M864 385 h44 v-40 h-44 Z"/>
+    <path class="ln thin" pathLength="1" style="--d:1.1s" d="M704 300 h44 v-40 h-44 Z M784 300 h44 v-40 h-44 Z M864 300 h44 v-40 h-44 Z"/>
+    <path class="ln thin" pathLength="1" style="--d:1.2s" d="M704 215 h44 v-40 h-44 Z M784 215 h44 v-40 h-44 Z M864 215 h44 v-40 h-44 Z"/>
+    <path class="ln" pathLength="1" style="--d:1.3s" d="M662 190 H958"/>
+
+    <!-- Línea de cotas verticales -->
+    <path class="ln thin" pathLength="1" style="--d:1.25s" d="M150 530 V190"/>
+    <path class="ln dash" pathLength="1" style="--d:1.35s" d="M150 530 H232 M150 445 H232 M150 360 H232 M150 275 H232 M150 190 H232"/>
+    <path class="ln thin" pathLength="1" style="--d:1.4s" d="M145 530 h10 M145 445 h10 M145 360 h10 M145 275 h10 M145 190 h10"/>
+    <text class="tx" style="--d:1.55s" x="66" y="534">+0,00</text>
+    <text class="tx" style="--d:1.62s" x="66" y="449">+3,40</text>
+    <text class="tx" style="--d:1.69s" x="66" y="364">+6,80</text>
+    <text class="tx" style="--d:1.76s" x="66" y="279">+10,20</text>
+    <text class="tx" style="--d:1.83s" x="66" y="194">+13,60</text>
+
+    <!-- Cota horizontal -->
+    <path class="ln thin" pathLength="1" style="--d:1.45s" d="M232 592 H948"/>
+    <path class="ln thin" pathLength="1" style="--d:1.5s" d="M232 586 v12 M508 586 v12 M672 586 v12 M948 586 v12"/>
+  </svg>
+
   <div class="lcard">
-    <div class="llogo">A</div>
-    <div class="ltitle"><h1>San José</h1><p>Sistema de Gestión de Obra</p></div>
+    <div class="lbrand">
+      <svg viewBox="0 0 100 87" aria-hidden="true"><polygon points="50,4 96,83 4,83"/><polygon points="50,26 77,72 23,72"/></svg>
+      <span><span class="lbrand-txt">Altus</span><span class="lbrand-sub">INGENIERÍA</span></span>
+    </div>
+    <div class="lsep"></div>
+    <div class="ltitle"><h1>Conjunto Residencial <em>San José</em></h1><p>Gestión de obra</p></div>
     <div id="lerr" class="lerr">Usuario o contraseña incorrectos</div>
     <div class="lfield"><label>Correo de usuario</label><input type="text" id="lu" placeholder="usuario@sanjose.com" autocomplete="username"></div>
     <div class="lfield">
@@ -236,7 +389,7 @@ th.gnm{z-index:5;background:var(--bg4)}
       </div>
     </div>
     <button class="lbtn" onclick="doLogin()">Ingresar</button>
-    <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--tx3);opacity:0.6">v1.24</div>
+    <div class="lver" style="text-align:center;margin-top:20px;font-size:8.5px;opacity:.6">v1.25</div>
   </div>
 </div>
 
@@ -699,11 +852,14 @@ async function doLogin(){
     CU=usuario;buildNav();
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app-screen').style.display='block';
-    document.getElementById('husr').textContent=usuario.nombre+' ('+usuario.rol+')';
-    document.getElementById('hdate').textContent=new Date().toLocaleDateString('es-VE',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
-    document.getElementById('wlbl').textContent='Semana '+getProyWeek();
-    initForms();
-    document.querySelector('.nbtn')&&document.querySelector('.nbtn').click();
+    setTxt('husr',usuario.nombre+' ('+usuario.rol+')');
+    setTxt('hdate',new Date().toLocaleDateString('es-VE',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}));
+    setTxt('wlbl','Semana '+getProyWeek());
+    try{initForms()}catch(e){console.error('initForms:',e)}
+    const primera=document.querySelector('.nbtn');
+    if(primera)primera.click();
+    window.scrollTo(0,0);
+    document.documentElement.scrollTop=0;
   }catch(e){err.style.display='block';err.textContent='Error: '+e.message;console.error(e)}
 }
 document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
@@ -749,22 +905,24 @@ function getProyWeek(){
   return Math.max(1,diff+1);
 }
 
+function setVal(id,v){const e=document.getElementById(id);if(e)e.value=v;return e}
+function setTxt(id,v){const e=document.getElementById(id);if(e)e.textContent=v;return e}
+
 function initForms(){
-  const t=td(),n=tn();
-  document.getElementById('d-fecha').value=t;
-  document.getElementById('d-ini').value='08:00';
-  document.getElementById('ff').value=t;document.getElementById('g-f').value=t;
-  document.getElementById('av-fecha').value=t;
-  document.getElementById('av-sem-lbl').textContent='Semana '+getProyWeek();
-  if(document.getElementById('av-semana'))document.getElementById('av-semana').value=getProyWeek();
-  document.getElementById('proy-nov-fecha').value=t;
-  // avance: solo admin sube fotos
-  if(CU.rol==='admin'){
-    document.getElementById('av-upload-zone').classList.remove('hidden');
-    const ap=document.getElementById('proy-admin-panel');
-    if(ap)ap.classList.remove('hidden');
-  }
-  // propietario: solo vista, sin upload ni edición (ya oculto por defecto)
+  const t=td();
+  setVal('d-fecha',t);
+  setVal('d-ini','08:00');
+  setVal('g-f',t);
+  setVal('av-fecha',t);
+  setTxt('av-sem-lbl','Semana '+getProyWeek());
+  setVal('av-semana',getProyWeek());
+  setVal('proy-nov-fecha',t);
+  // Avance y Proyecto: solo admin puede publicar
+  const esAdmin=CU&&CU.rol==='admin';
+  const zona=document.getElementById('av-upload-zone');
+  if(zona)zona.classList.toggle('hidden',!esAdmin);
+  const ap=document.getElementById('proy-admin-panel');
+  if(ap)ap.classList.toggle('hidden',!esAdmin);
   initToggles();
 }
 function initToggles(){
